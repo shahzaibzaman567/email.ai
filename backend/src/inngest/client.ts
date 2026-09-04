@@ -1,0 +1,12 @@
+import { Inngest } from "inngest";
+import { env } from "../config/env.js";
+import { logger } from "../lib/logger.js";
+
+export const inngest = new Inngest({
+  id: "email-ai",
+  eventKey: env.inngest.eventKey || undefined,
+  signingKey: env.inngest.signingKey || undefined,
+  baseUrl: env.inngest.baseUrl || undefined,
+  isDev: env.nodeEnv !== "production",
+  logger,
+});
