@@ -4,6 +4,7 @@ import helmet from "helmet";
 import { rateLimit } from "express-rate-limit";
 import { serve } from "inngest/express";
 import { env } from "./config/env.js";
+import { connectDB } from "./db/index.js";
 import v1Router from "./routes/v1/index.js";
 import { inngest } from "./inngest/client.js";
 import { inngestFunctions } from "./inngest/functions/index.js";
@@ -28,6 +29,16 @@ export function createApp(): express.Express {
   app.disable("x-powered-by");
 
   app.use(helmet());
+
+  app.use(async (_req, _res, next) => {
+    try {
+      await connectDB(env.mongodbUri);
+      next();
+    } catch (err) {
+      next(err);
+    }
+  });
+
   app.use(
     cors({
       origin: env.clientUrl,
@@ -48,3 +59,5 @@ export function createApp(): express.Express {
 
   return app;
 }
+
+export default createApp();

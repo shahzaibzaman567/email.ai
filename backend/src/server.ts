@@ -1,6 +1,6 @@
 import { env } from "./config/env.js";
 import { connectDB } from "./db/index.js";
-import { createApp } from "./app.js";
+import app from "./app.js";
 import { logger, safeErrorMessage } from "./lib/logger.js";
 
 async function main(): Promise<void> {
@@ -10,8 +10,6 @@ async function main(): Promise<void> {
   });
 
   await connectDB(env.mongodbUri);
-
-  const app = createApp();
 
   const server = app.listen(env.port, () => {
     logger.info(`Server listening on http://localhost:${env.port}`);
