@@ -10,7 +10,7 @@ export function useSettings() {
     queryKey: ["settings"],
     queryFn: async () => {
       const token = await getToken();
-      return apiRequest<any>("/settings/cold-email", {
+      return apiRequest<any>("/api/v1/settings/cold-email", {
         token: token ?? undefined
       });
     },
@@ -19,7 +19,7 @@ export function useSettings() {
   const updateSettings = useMutation({
     mutationFn: async (data: any) => {
       const token = await getToken();
-      return apiRequest<any>("/settings/cold-email", {
+      return apiRequest<any>("/api/v1/settings/cold-email", {
         method: "PUT",
         body: data,
         token: token ?? undefined

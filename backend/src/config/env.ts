@@ -25,6 +25,10 @@ const booleanish = z.preprocess(
 );
 
 const envSchema = z.object({
+  ENCRYPTION_KEY: z.string().trim().length(64).default(
+    // Fallback only for dev. 64 hex chars = 32 bytes
+    "0000000000000000000000000000000000000000000000000000000000000000"
+  ),
   NODE_ENV: z
     .enum(["development", "test", "production"])
     .default("development"),
@@ -71,6 +75,7 @@ if (missing.length > 0) {
 }
 
 export const env = {
+  encryptionKey: parsed.data.ENCRYPTION_KEY,
   nodeEnv: parsed.data.NODE_ENV,
   isProd: parsed.data.NODE_ENV === "production",
   isTest,

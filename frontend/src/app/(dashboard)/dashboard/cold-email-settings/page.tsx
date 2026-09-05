@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { useSettings } from "@/hooks/use-settings";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, Mail, ExternalLink } from "lucide-react";
 
 export default function ColdEmailSettingsPage() {
   const { settings, isLoading, updateSettings } = useSettings();
@@ -52,6 +52,91 @@ export default function ColdEmailSettingsPage() {
       </div>
 
       <div className="space-y-6">
+
+        {/* --- EMAIL ACCOUNT SECTION --- */}
+        <Card className="border-blue-100 dark:border-blue-900">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Mail className="h-5 w-5 text-blue-600" /> Your Email Account
+            </CardTitle>
+            <CardDescription>
+              Connect your own email account (Gmail, Outlook, etc.) so emails are sent from your address.
+              Every user must configure this before launching campaigns.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="smtp-host">SMTP Host</Label>
+                <Input
+                  id="smtp-host"
+                  value={formData.smtpHost || ""}
+                  onChange={(e) => handleChange("smtpHost", e.target.value)}
+                  placeholder="smtp.gmail.com"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="smtp-port">SMTP Port</Label>
+                <Input
+                  id="smtp-port"
+                  type="number"
+                  value={formData.smtpPort || 587}
+                  onChange={(e) => handleChange("smtpPort", parseInt(e.target.value))}
+                  placeholder="587"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="smtp-user">Email Address (SMTP User)</Label>
+                <Input
+                  id="smtp-user"
+                  type="email"
+                  value={formData.smtpUser || ""}
+                  onChange={(e) => handleChange("smtpUser", e.target.value)}
+                  placeholder="yourname@gmail.com"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="smtp-password">Password / App Password</Label>
+                <Input
+                  id="smtp-password"
+                  type="password"
+                  value={formData.smtpPassword || ""}
+                  onChange={(e) => handleChange("smtpPassword", e.target.value)}
+                  placeholder="••••••••"
+                />
+              </div>
+              <div className="space-y-2 sm:col-span-2">
+                <Label htmlFor="smtp-from">From Name / Address (optional)</Label>
+                <Input
+                  id="smtp-from"
+                  value={formData.smtpFrom || ""}
+                  onChange={(e) => handleChange("smtpFrom", e.target.value)}
+                  placeholder="Your Name <yourname@gmail.com>"
+                />
+              </div>
+            </div>
+
+            {/* Gmail guide */}
+            <div className="mt-2 rounded-md bg-blue-50 dark:bg-blue-950 border border-blue-100 dark:border-blue-900 p-4 text-sm space-y-2">
+              <p className="font-semibold text-blue-800 dark:text-blue-300">📧 Using Gmail?</p>
+              <ol className="list-decimal list-inside space-y-1 text-blue-700 dark:text-blue-400">
+                <li>Enable 2-Step Verification in your Google Account.</li>
+                <li>Go to <strong>Google Account → Security → App Passwords</strong>.</li>
+                <li>Generate an App Password for "Mail" and paste it above (not your regular password).</li>
+                <li>Set Host: <code className="bg-blue-100 dark:bg-blue-900 px-1 rounded">smtp.gmail.com</code>, Port: <code className="bg-blue-100 dark:bg-blue-900 px-1 rounded">587</code></li>
+              </ol>
+              <a
+                href="https://myaccount.google.com/apppasswords"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-blue-600 hover:underline font-semibold mt-1"
+              >
+                Open Google App Passwords <ExternalLink className="h-3 w-3" />
+              </a>
+            </div>
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader>
             <CardTitle>Groq API Settings</CardTitle>
@@ -183,12 +268,12 @@ export default function ColdEmailSettingsPage() {
                 <Input type="number" value={formData.dailyLimit || 100} onChange={(e) => handleChange("dailyLimit", parseInt(e.target.value))} />
               </div>
               <div className="space-y-2">
-                <Label>Start Hour (UTC)</Label>
-                <Input type="number" min="0" max="23" value={formData.scheduleStartHour || 9} onChange={(e) => handleChange("scheduleStartHour", parseInt(e.target.value))} />
+                <Label>Start Time</Label>
+                <Input type="time" value={formData.scheduleStartTime || "09:00"} onChange={(e) => handleChange("scheduleStartTime", e.target.value)} />
               </div>
               <div className="space-y-2">
-                <Label>End Hour (UTC)</Label>
-                <Input type="number" min="0" max="23" value={formData.scheduleEndHour || 17} onChange={(e) => handleChange("scheduleEndHour", parseInt(e.target.value))} />
+                <Label>End Time</Label>
+                <Input type="time" value={formData.scheduleEndTime || "17:00"} onChange={(e) => handleChange("scheduleEndTime", e.target.value)} />
               </div>
             </div>
           </CardContent>

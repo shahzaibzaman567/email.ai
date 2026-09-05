@@ -10,6 +10,14 @@ export interface SendEmailInput {
   subject: string;
   html?: string;
   text?: string;
+  // Optional per-user SMTP override; if omitted, falls back to global env SMTP
+  userSmtp?: {
+    host: string;
+    port: number;
+    user: string;
+    password: string;
+    from?: string;
+  };
 }
 
 export interface SendEmailResult {
@@ -34,14 +42,24 @@ export class ProviderRateLimitError extends Error {
   }
 }
 
-let transporter: Transporter | null = null;
+let sharedTransporter: Transporter | null = null;
 
-function getTransporter(): Transporter {
+function getTransporter(userSmtp?: SendEmailInput["userSmtp"]): Transporter {
+  // If the caller provides per-user SMTP creds, create a one-off transporter
+  if (userSmtp) {
+    return nodemailer.createTransport({
+      host: userSmtp.host,
+      port: userSmtp.port,
+      secure: userSmtp.port === 465,
+      auth: { user: userSmtp.user, pass: userSmtp.password },
+    });
+  }
+  // Fall back to global env SMTP
   if (!env.email.host || !env.email.user || !env.email.password) {
     throw new EmailNotConfiguredError();
   }
-  if (!transporter) {
-    transporter = nodemailer.createTransport({
+  if (!sharedTransporter) {
+    sharedTransporter = nodemailer.createTransport({
       host: env.email.host,
       port: env.email.port,
       secure: env.email.port === 465,
@@ -50,7 +68,7 @@ function getTransporter(): Transporter {
       maxConnections: 1,
     });
   }
-  return transporter;
+  return sharedTransporter;
 }
 
 export function isRateLimitError(err: unknown): boolean {
@@ -88,11 +106,12 @@ export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult>
     };
   }
 
-  const transport = getTransporter();
+  const transport = getTransporter(input.userSmtp);
+  const fromAddress = input.userSmtp?.from ?? env.email.from;
 
   try {
     const info = await transport.sendMail({
-      ...(env.email.from ? { from: env.email.from } : {}),
+      ...(fromAddress ? { from: fromAddress } : {}),
       to: input.to,
       subject: input.subject,
       html: input.html,

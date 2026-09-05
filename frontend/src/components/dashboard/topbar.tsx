@@ -3,6 +3,7 @@
 import { UserButton } from "@clerk/nextjs";
 import { ThemeToggle } from "./theme-toggle";
 import { MobileNav } from "./mobile-nav";
+import { AnalogClock } from "./analog-clock";
 
 export function Topbar() {
   return (
@@ -10,8 +11,9 @@ export function Topbar() {
       {/* Mobile: show hamburger; Desktop: hidden (sidebar shows the logo) */}
       <MobileNav />
 
-      {/* Right side: ThemeToggle + UserButton — always visible */}
+      {/* Right side: Clock + ThemeToggle + UserButton — always visible */}
       <div className="flex items-center gap-3">
+        <AnalogClock timezone="Asia/Karachi" size={30} showSeconds label="PKT" />
         <ThemeToggle />
         <UserButton
           appearance={{

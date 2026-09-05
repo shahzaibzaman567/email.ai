@@ -11,6 +11,7 @@ import {
   Settings,
   Users,
   ShieldCheck,
+  Clock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -20,6 +21,7 @@ const NAV_ITEMS = [
   { href: "/dashboard/leads", label: "Leads", icon: Users },
   { href: "/dashboard/sent-emails", label: "Sent Emails", icon: FileText },
   { href: "/dashboard/ai-training", label: "AI Training", icon: BarChart3 },
+  { href: "/dashboard/world-clock", label: "World Clock", icon: Clock },
   { href: "/dashboard/cold-email-settings", label: "Cold Email Settings", icon: Settings },
 ];
 

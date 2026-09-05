@@ -20,7 +20,17 @@ const optionalTrimmedString = (max: number) =>
   z.preprocess(emptyToUndefined, z.string().trim().max(max).optional());
 
 const optionalWebsite = z
-  .preprocess(emptyToUndefined, z.string().trim().max(2000).optional())
+  .preprocess((val) => {
+    const v = emptyToUndefined(val);
+    if (typeof v === "string") {
+      const trimmed = v.trim();
+      if (trimmed && !/^https?:\/\//i.test(trimmed) && trimmed.includes(".")) {
+        return `https://${trimmed}`;
+      }
+      return trimmed;
+    }
+    return v;
+  }, z.string().trim().max(2000).optional())
   .refine(
     (value) =>
       value === undefined ||
@@ -39,7 +49,7 @@ const leadFields = {
   status: z.enum(LEAD_STATUSES).optional(),
 };
 
-export const leadCreateSchema = z.object(leadFields);
+export const leadCreateSchema = z.object(leadFields).strict();
 
 export const leadUpdateSchema = z
   .object({
@@ -52,6 +62,7 @@ export const leadUpdateSchema = z
     notes: optionalTrimmedString(5000),
     status: z.enum(LEAD_STATUSES).optional(),
   })
+  .strict()
   .refine((data) => Object.keys(data).length > 0, {
     message: "At least one field must be provided",
     path: ["body"],

@@ -93,3 +93,20 @@ export function useValidateLeads() {
     },
   });
 }
+
+export function useDeleteLead() {
+  const { getToken } = useAuth();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const token = await getToken();
+      return apiRequest<void>(API.endpoints.lead(id), {
+        method: "DELETE",
+        token: token ?? undefined,
+      });
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["leads"] });
+    },
+  });
+}

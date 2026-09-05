@@ -2,14 +2,71 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
+
 import Papa from "papaparse";
 import * as XLSX from "xlsx";
-import { UploadCloud, CheckCircle2, AlertCircle, FileX, ArrowRight, Loader2 } from "lucide-react";
+import {
+  UploadCloud,
+  CheckCircle2,
+  AlertCircle,
+  FileX,
+  ArrowRight,
+  Loader2,
+  FileSpreadsheet,
+  Download,
+  ArrowLeft,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useValidateLeads, useCreateLeads, BulkValidateResult } from "@/hooks/use-leads";
 import { toast } from "sonner";
+
+function normalizeLeadRow(rawRow: Record<string, any>): Record<string, any> {
+  const normalized: Record<string, any> = {};
+  for (const [key, rawValue] of Object.entries(rawRow)) {
+    const cleanKey = key.trim().toLowerCase().replace(/[^a-z0-9]/g, "");
+    const value = typeof rawValue === "string" ? rawValue.trim() : rawValue;
+    if (value === "" || value === null || value === undefined) continue;
+
+    if (cleanKey === "email" || cleanKey === "emailaddress" || cleanKey === "mail") {
+      normalized.email = typeof value === "string" ? value.trim().toLowerCase() : value;
+    } else if (cleanKey === "firstname" || cleanKey === "first" || cleanKey === "fname" || cleanKey === "name") {
+      normalized.firstName = value;
+    } else if (cleanKey === "lastname" || cleanKey === "last" || cleanKey === "lname" || cleanKey === "surname") {
+      normalized.lastName = value;
+    } else if (
+      cleanKey === "businessname" ||
+      cleanKey === "business" ||
+      cleanKey === "company" ||
+      cleanKey === "companyname" ||
+      cleanKey === "org" ||
+      cleanKey === "organization"
+    ) {
+      normalized.businessName = value;
+    } else if (
+      cleanKey === "website" ||
+      cleanKey === "url" ||
+      cleanKey === "site" ||
+      cleanKey === "web" ||
+      cleanKey === "link"
+    ) {
+      let web = String(value).trim();
+      if (web && !/^https?:\/\//i.test(web)) {
+        web = `https://${web}`;
+      }
+      normalized.website = web;
+    } else if (cleanKey === "problem" || cleanKey === "painpoint" || cleanKey === "pain" || cleanKey === "challenge") {
+      normalized.problem = value;
+    } else if (cleanKey === "notes" || cleanKey === "note" || cleanKey === "comment" || cleanKey === "description") {
+      normalized.notes = value;
+    } else if (cleanKey === "status") {
+      normalized.status = value;
+    }
+  }
+  return normalized;
+}
 
 export default function ImportLeadsPage() {
   const router = useRouter();
@@ -28,57 +85,81 @@ export default function ImportLeadsPage() {
     }
   };
 
+  const downloadSampleCSV = () => {
+    const sampleData =
+      "email,firstName,lastName,businessName,website,problem,notes\n" +
+      "john.doe@example.com,John,Doe,Acme Corp,https://acme.com,High bounce rates,Interested in cold outreach\n" +
+      "sarah.smith@innovate.co,Sarah,Smith,Innovate Co,https://innovate.co,Low email open rate,Follow up next week\n";
+    const blob = new Blob([sampleData], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", "sample_leads_template.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const handleParseAndValidate = () => {
     if (!file) return;
     setParsing(true);
-      if (file.name.endsWith(".csv")) {
-        Papa.parse(file, {
-          header: true,
-          skipEmptyLines: true,
-          complete: async (results) => {
-            setParsing(false);
-            try {
-              const res = await validateLeads(results.data);
-              setValidationResult(res);
-              toast.success("Validation complete");
-            } catch (err: any) {
-              toast.error(err.message || "Validation failed");
-            }
-          },
-          error: (err) => {
-            setParsing(false);
-            toast.error(`CSV Parsing error: ${err.message}`);
-          }
-        });
-      } else if (file.name.endsWith(".xlsx") || file.name.endsWith(".xls")) {
-        const reader = new FileReader();
-        reader.onload = async (e) => {
+    if (file.name.endsWith(".csv")) {
+      Papa.parse(file, {
+        header: true,
+        skipEmptyLines: true,
+        complete: async (results) => {
           try {
-            const data = new Uint8Array(e.target?.result as ArrayBuffer);
-            const workbook = XLSX.read(data, { type: "array" });
-            const firstSheetName = workbook.SheetNames[0];
-            const worksheet = workbook.Sheets[firstSheetName];
-            const json = XLSX.utils.sheet_to_json(worksheet);
+            const normalizedData = results.data
+              .filter((row: any) => typeof row === "object" && row !== null)
+              .map((row: any) => normalizeLeadRow(row));
+
+            const res = await validateLeads(normalizedData);
             setParsing(false);
-            const res = await validateLeads(json);
             setValidationResult(res);
             toast.success("Validation complete");
           } catch (err: any) {
             setParsing(false);
-            toast.error(err.message || "Excel Parsing/Validation failed");
+            toast.error(err.message || "Validation failed");
           }
-        };
-        reader.readAsArrayBuffer(file);
-      } else {
-        setParsing(false);
-        toast.error("Unsupported file type");
-      }
+        },
+        error: (err) => {
+          setParsing(false);
+          toast.error(`CSV Parsing error: ${err.message}`);
+        },
+      });
+    } else if (file.name.endsWith(".xlsx") || file.name.endsWith(".xls")) {
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        try {
+          const data = new Uint8Array(e.target?.result as ArrayBuffer);
+          const workbook = XLSX.read(data, { type: "array" });
+          const firstSheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[firstSheetName];
+          const json = XLSX.utils.sheet_to_json(worksheet);
+          const normalizedData = json
+            .filter((row: any) => typeof row === "object" && row !== null)
+            .map((row: any) => normalizeLeadRow(row));
+
+          const res = await validateLeads(normalizedData);
+          setParsing(false);
+          setValidationResult(res);
+          toast.success("Validation complete");
+        } catch (err: any) {
+          setParsing(false);
+          toast.error(err.message || "Excel Parsing/Validation failed");
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    } else {
+      setParsing(false);
+      toast.error("Unsupported file type. Please upload a .csv or .xlsx file");
+    }
   };
 
   const handleImport = async () => {
     if (!validationResult || validationResult.valid.length === 0) return;
     try {
-      const leadsToImport = validationResult.valid.map(v => v.data);
+      const leadsToImport = validationResult.valid.map((v) => v.data);
       const res = await importLeads(leadsToImport);
       toast.success(`Successfully imported ${res.imported} leads!`);
       router.push("/dashboard/leads");
@@ -89,9 +170,24 @@ export default function ImportLeadsPage() {
 
   return (
     <div className="max-w-4xl mx-auto py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Import Leads</h1>
-        <p className="text-slate-500 mt-2">Upload a CSV file containing your leads to add them to your pipeline.</p>
+      <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2 mb-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => router.push("/dashboard/leads")}
+              className="text-slate-500 hover:text-slate-900 -ml-2"
+            >
+              <ArrowLeft className="h-4 w-4 mr-1" /> Back to Leads
+            </Button>
+          </div>
+          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Import Leads</h1>
+          <p className="text-slate-500 mt-1">Upload a CSV or Excel file containing your prospects.</p>
+        </div>
+        <Button variant="outline" size="sm" onClick={downloadSampleCSV} className="self-start sm:self-auto">
+          <Download className="h-4 w-4 mr-2" /> Download Sample CSV
+        </Button>
       </div>
 
       <div className="grid gap-6">
@@ -102,20 +198,31 @@ export default function ImportLeadsPage() {
                 <UploadCloud className="h-10 w-10 text-blue-600" />
               </div>
               <h3 className="text-xl font-semibold mb-2">Upload your CSV or Excel file</h3>
-              <p className="text-slate-500 max-w-md mb-8">
-                Your file should have headers matching: email, firstName, lastName, businessName, website.
+              <p className="text-slate-500 max-w-md mb-6 text-sm">
+                Supported columns: <span className="font-medium text-slate-700">email</span>,{" "}
+                <span className="font-medium text-slate-700">firstName</span>,{" "}
+                <span className="font-medium text-slate-700">lastName</span>,{" "}
+                <span className="font-medium text-slate-700">businessName</span>,{" "}
+                <span className="font-medium text-slate-700">website</span>,{" "}
+                <span className="font-medium text-slate-700">problem</span>,{" "}
+                <span className="font-medium text-slate-700">notes</span>.
               </p>
-              
-              <div className="flex items-center gap-4">
-                <Button variant="outline" onClick={() => document.getElementById("file-upload")?.click()} disabled={parsing || validating}>
-                  Select File
+
+              <div className="flex flex-wrap items-center justify-center gap-4">
+                <Button
+                  variant="outline"
+                  onClick={() => document.getElementById("file-upload")?.click()}
+                  disabled={parsing || validating}
+                >
+                  <FileSpreadsheet className="h-4 w-4 mr-2" />
+                  Select File (.csv, .xlsx)
                 </Button>
-                <input 
-                  type="file" 
-                  id="file-upload" 
-                  className="hidden" 
-                  accept=".csv,.xlsx,.xls" 
-                  onChange={handleFileUpload} 
+                <input
+                  type="file"
+                  id="file-upload"
+                  className="hidden"
+                  accept=".csv,.xlsx,.xls"
+                  onChange={handleFileUpload}
                 />
                 {file && (
                   <Button onClick={handleParseAndValidate} disabled={parsing || validating}>
@@ -124,7 +231,7 @@ export default function ImportLeadsPage() {
                   </Button>
                 )}
               </div>
-              {file && <p className="mt-4 text-sm font-medium text-slate-700">Selected: {file.name}</p>}
+              {file && <p className="mt-4 text-sm font-medium text-blue-700 bg-blue-50 px-3 py-1 rounded-full">Selected: {file.name}</p>}
             </CardContent>
           </Card>
         ) : (
@@ -168,19 +275,27 @@ export default function ImportLeadsPage() {
                 <CardDescription>Review the results before importing.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                
                 {validationResult.invalid.length > 0 && (
                   <div>
-                    <h4 className="font-semibold text-red-700 mb-3 flex items-center"><FileX className="h-4 w-4 mr-2" /> Invalid Errors</h4>
+                    <h4 className="font-semibold text-red-700 mb-3 flex items-center">
+                      <FileX className="h-4 w-4 mr-2" /> Invalid Errors
+                    </h4>
                     <div className="bg-red-50 rounded-md p-4 max-h-60 overflow-y-auto text-sm space-y-2 border border-red-100">
                       {validationResult.invalid.slice(0, 20).map((inv, i) => (
-                        <div key={i} className="flex flex-col sm:flex-row sm:items-start gap-1 sm:gap-4 pb-2 border-b border-red-200 last:border-0 last:pb-0">
-                          <Badge variant="outline" className="bg-white text-red-700 whitespace-nowrap self-start">Row {inv.row}</Badge>
+                        <div
+                          key={i}
+                          className="flex flex-col sm:flex-row sm:items-start gap-1 sm:gap-4 pb-2 border-b border-red-200 last:border-0 last:pb-0"
+                        >
+                          <Badge variant="outline" className="bg-white text-red-700 whitespace-nowrap self-start">
+                            Row {inv.row}
+                          </Badge>
                           <span className="text-red-600">{inv.reason}</span>
                         </div>
                       ))}
                       {validationResult.invalid.length > 20 && (
-                        <p className="text-red-500 italic pt-2">...and {validationResult.invalid.length - 20} more errors</p>
+                        <p className="text-red-500 italic pt-2">
+                          ...and {validationResult.invalid.length - 20} more errors
+                        </p>
                       )}
                     </div>
                   </div>
@@ -188,17 +303,26 @@ export default function ImportLeadsPage() {
 
                 {validationResult.duplicates.length > 0 && (
                   <div>
-                    <h4 className="font-semibold text-amber-700 mb-3 flex items-center"><AlertCircle className="h-4 w-4 mr-2" /> Duplicates Skipped</h4>
+                    <h4 className="font-semibold text-amber-700 mb-3 flex items-center">
+                      <AlertCircle className="h-4 w-4 mr-2" /> Duplicates Skipped
+                    </h4>
                     <div className="bg-amber-50 rounded-md p-4 max-h-60 overflow-y-auto text-sm space-y-2 border border-amber-100">
                       {validationResult.duplicates.slice(0, 20).map((dup, i) => (
-                        <div key={i} className="flex items-center gap-4 pb-2 border-b border-amber-200 last:border-0 last:pb-0">
-                          <Badge variant="outline" className="bg-white text-amber-700 whitespace-nowrap">Row {dup.row}</Badge>
+                        <div
+                          key={i}
+                          className="flex items-center gap-4 pb-2 border-b border-amber-200 last:border-0 last:pb-0"
+                        >
+                          <Badge variant="outline" className="bg-white text-amber-700 whitespace-nowrap">
+                            Row {dup.row}
+                          </Badge>
                           <span className="text-amber-800 font-medium">{dup.data?.email}</span>
                           <span className="text-amber-600 text-xs">{dup.reason}</span>
                         </div>
                       ))}
                       {validationResult.duplicates.length > 20 && (
-                        <p className="text-amber-600 italic pt-2">...and {validationResult.duplicates.length - 20} more duplicates</p>
+                        <p className="text-amber-600 italic pt-2">
+                          ...and {validationResult.duplicates.length - 20} more duplicates
+                        </p>
                       )}
                     </div>
                   </div>
@@ -208,16 +332,15 @@ export default function ImportLeadsPage() {
                   <Button variant="ghost" onClick={() => setValidationResult(null)}>
                     Back to Upload
                   </Button>
-                  <Button 
-                    onClick={handleImport} 
+                  <Button
+                    onClick={handleImport}
                     disabled={validationResult.valid.length === 0 || importing}
-                    className="bg-blue-600 hover:bg-blue-700"
+                    className="bg-blue-600 hover:bg-blue-700 text-white"
                   >
                     {importing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Import {validationResult.valid.length} Leads <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                 </div>
-
               </CardContent>
             </Card>
           </div>
@@ -226,3 +349,4 @@ export default function ImportLeadsPage() {
     </div>
   );
 }
+

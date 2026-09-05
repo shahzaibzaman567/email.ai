@@ -89,7 +89,7 @@ export default function CreateCampaignPage() {
     try {
       const leadId = Array.from(selectedLeads)[0];
       const token = await getToken();
-      const res = await apiRequest<any>("/email-preview", {
+      const res = await apiRequest<any>("/api/v1/email-preview", {
         method: "POST",
         body: {
           leadId,

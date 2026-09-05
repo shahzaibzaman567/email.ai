@@ -22,10 +22,17 @@ export interface IColdEmailSettings {
   customSubjectInstruction?: string;
   groqApiKey?: string;
   
+  // Per-user SMTP credentials
+  smtpHost?: string;
+  smtpPort?: number;
+  smtpUser?: string;
+  smtpPassword?: string;
+  smtpFrom?: string;
+  
   // Daily Schedule
   dailyLimit?: number;
-  scheduleStartHour?: number;
-  scheduleEndHour?: number;
+  scheduleStartTime?: string;
+  scheduleEndTime?: string;
   scheduleTimezone?: string;
 
   createdAt: Date;
@@ -54,9 +61,16 @@ const coldEmailSettingsSchema = new Schema<IColdEmailSettings>(
     customSubjectInstruction: { type: String, trim: true },
     groqApiKey: { type: String, trim: true },
 
+    // Per-user SMTP
+    smtpHost: { type: String, trim: true },
+    smtpPort: { type: Number },
+    smtpUser: { type: String, trim: true },
+    smtpPassword: { type: String },
+    smtpFrom: { type: String, trim: true },
+
     dailyLimit: { type: Number, default: 100 },
-    scheduleStartHour: { type: Number, default: 9 },
-    scheduleEndHour: { type: Number, default: 17 },
+    scheduleStartTime: { type: String, default: "09:00" },
+    scheduleEndTime: { type: String, default: "17:00" },
     scheduleTimezone: { type: String, default: "UTC" },
   },
   { timestamps: true }
