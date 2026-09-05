@@ -2,16 +2,22 @@
 
 import { useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAdminStats } from "@/hooks/use-admin";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Loader2, Users, Mail, AlertTriangle } from "lucide-react";
+import { Loader2, Users, Mail, AlertTriangle, RefreshCw } from "lucide-react";
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
+import { Button } from "@/components/ui/button";
+import { apiRequest } from "@/lib/api-client";
+import { useAuth } from "@clerk/nextjs";
 
 export default function AdminPage() {
   const { user, isLoaded } = useUser();
+  const { getToken } = useAuth();
   const router = useRouter();
   const { stats, isLoading, error } = useAdminStats();
+  const [debugInfo, setDebugInfo] = useState<any>(null);
+  const [loadingDebug, setLoadingDebug] = useState(false);
 
   const userEmail = user?.primaryEmailAddress?.emailAddress;
   const ownerEmail = "shahzaibzaman.official@gmail.com";
@@ -23,6 +29,21 @@ export default function AdminPage() {
       router.push("/dashboard");
     }
   }, [isLoaded, isAdmin, router]);
+
+  const handleCheckDebugInfo = async () => {
+    setLoadingDebug(true);
+    try {
+      const token = await getToken();
+      const response = await apiRequest<any>("/api/v1/debug/owner", {
+        token: token ?? undefined,
+      });
+      setDebugInfo(response);
+    } catch (err) {
+      setDebugInfo({ error: err instanceof Error ? err.message : "Unknown error" });
+    } finally {
+      setLoadingDebug(false);
+    }
+  };
 
   if (!isLoaded || isLoading) {
     return (
@@ -38,6 +59,12 @@ export default function AdminPage() {
         <AlertTriangle className="h-12 w-12 text-red-500" />
         <h2 className="text-xl font-bold">Access Denied</h2>
         <p className="text-slate-500">Only the platform owner can access the admin panel.</p>
+        <p className="text-sm text-slate-400 mt-4">
+          Your email: <span className="font-mono font-bold">{userEmail}</span>
+        </p>
+        <p className="text-sm text-slate-400">
+          Required email: <span className="font-mono font-bold">{ownerEmail}</span>
+        </p>
       </div>
     );
   }
@@ -54,10 +81,38 @@ export default function AdminPage() {
         <p className="text-slate-500 mt-2">Platform performance and active user statistics.</p>
       </div>
 
+      {/* Debug Section */}
+      <Card className="border-blue-200 bg-blue-50">
+        <CardHeader>
+          <CardTitle className="text-sm">Debug Information</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Button 
+            onClick={handleCheckDebugInfo} 
+            disabled={loadingDebug}
+            variant="outline"
+            size="sm"
+            className="gap-2"
+          >
+            <RefreshCw className="h-4 w-4" />
+            {loadingDebug ? "Checking..." : "Check Backend Configuration"}
+          </Button>
+          {debugInfo && (
+            <pre className="bg-slate-900 text-slate-100 p-3 rounded text-xs overflow-auto max-h-40">
+              {JSON.stringify(debugInfo, null, 2)}
+            </pre>
+          )}
+          <p className="text-xs text-slate-600">
+            Your email: <span className="font-mono font-bold">{userEmail}</span>
+          </p>
+        </CardContent>
+      </Card>
+
       {error ? (
         <Card className="border-red-200 bg-red-50 text-red-700">
           <CardContent className="p-6">
             Failed to load admin analytics. Please make sure you are registered as the platform owner.
+            <p className="text-xs mt-2">Try clicking "Check Backend Configuration" above to diagnose the issue.</p>
           </CardContent>
         </Card>
       ) : (

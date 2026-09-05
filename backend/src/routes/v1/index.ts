@@ -10,10 +10,22 @@ import emailLogsRoutes from "./email-logs.routes.js";
 import adminRoutes from "./admin.routes.js";
 import { previewEmail } from "../../controllers/email-preview.controller.js";
 import { asyncHandler } from "../../lib/async-handler.js";
+import { env } from "../../config/env.js";
 
 const router = Router();
 
 router.use("/health", healthRoutes);
+
+// Debug endpoint to check owner email configuration
+router.get("/debug/owner", (_req, res) => {
+  res.json({
+    success: true,
+    message: "Owner email configuration",
+    ownerEmail: env.ownerEmail || "NOT_SET",
+    nodeEnv: env.nodeEnv,
+  });
+});
+
 router.use(requireAuth);
 router.use("/leads", leadRoutes);
 router.use("/campaigns", campaignRoutes);

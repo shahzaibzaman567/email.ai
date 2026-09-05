@@ -35,32 +35,47 @@ async function authenticate(req: Request, _res: Response, next: NextFunction): P
   }
 
   let isOwner = false;
+  let ownerCheckReason = "";
+
+  // Primary check: Compare with OWNER_EMAIL environment variable
   if (env.ownerEmail && auth.email) {
-    // Case-insensitive email comparison
-    isOwner = auth.email.toLowerCase() === env.ownerEmail.toLowerCase();
+    const emailsMatch = auth.email.toLowerCase() === env.ownerEmail.toLowerCase();
+    if (emailsMatch) {
+      isOwner = true;
+      ownerCheckReason = "Email matched OWNER_EMAIL env variable";
+    } else {
+      ownerCheckReason = `Email mismatch: ${auth.email} !== ${env.ownerEmail}`;
+    }
+  } else {
+    ownerCheckReason = `OWNER_EMAIL not configured or user email missing. ownerEmail=${env.ownerEmail}, userEmail=${auth.email}`;
   }
 
   // Fallback: allow owner by DB role if OWNER_EMAIL isn't configured or doesn't match
   if (!isOwner) {
     try {
       const user = await UserModel.findOne({ clerkId: auth.userId }).select("role").lean().exec();
-      if (user?.role === "owner") isOwner = true;
+      if (user?.role === "owner") {
+        isOwner = true;
+        ownerCheckReason = "User role in database is 'owner'";
+      } else {
+        ownerCheckReason += ` | DB role is '${user?.role || "not_found"}'`;
+      }
     } catch (err) {
       logger.warn("Failed to check user role for owner fallback", { reason: safeErrorMessage(err) });
+      ownerCheckReason += " | DB check failed";
     }
   }
 
   req.auth = { ...auth, isOwner };
-  
-  // Log owner status for debugging
-  if (env.ownerEmail) {
-    logger.info("Owner verification check", {
-      userId: auth.userId,
-      userEmail: auth.email,
-      ownerEmail: env.ownerEmail,
-      isOwner,
-    });
-  }
+
+  // Log authentication details for debugging
+  logger.info("User authenticated", {
+    userId: auth.userId,
+    email: auth.email,
+    isOwner,
+    reason: ownerCheckReason,
+    path: req.path,
+  });
 
   next();
 }
