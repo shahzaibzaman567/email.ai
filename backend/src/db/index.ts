@@ -1,7 +1,18 @@
 import mongoose from "mongoose";
 import { logger } from "../lib/logger.js";
 
+let cachedPromise: Promise<typeof mongoose> | null = null;
+
 export async function connectDB(uri: string): Promise<void> {
+  if (mongoose.connection.readyState === 1) {
+    return;
+  }
+
+  if (cachedPromise) {
+    await cachedPromise;
+    return;
+  }
+
   mongoose.connection.on("connected", () => {
     logger.info("MongoDB connected");
   });
@@ -12,11 +23,12 @@ export async function connectDB(uri: string): Promise<void> {
     logger.warn("MongoDB disconnected");
   });
 
-  await mongoose.connect(uri, {
+  cachedPromise = mongoose.connect(uri, {
     serverSelectionTimeoutMS: 10_000,
     autoIndex: process.env.NODE_ENV !== "production",
   });
 
+  await cachedPromise;
   logger.info("MongoDB connection established");
 }
 

@@ -1,13 +1,11 @@
-import { env } from "../src/config/env.js";
-import { connectDB } from "../src/db/index.js";
+import type { Request, Response } from "express";
 import { createApp } from "../src/app.js";
-
-// Vercel Serverless Function entry point
-
-// Initiate connection. In serverless environments, this promise may float
-// but mongoose internally buffers commands until the connection is established.
-connectDB(env.mongodbUri).catch(console.error);
+import { connectDB } from "../src/db/index.js";
+import { env } from "../src/config/env.js";
 
 const app = createApp();
 
-export default app;
+export default async function handler(req: Request, res: Response): Promise<void> {
+  await connectDB(env.mongodbUri);
+  app(req, res);
+}
