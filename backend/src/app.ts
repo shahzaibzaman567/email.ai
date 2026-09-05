@@ -55,6 +55,11 @@ export function createApp(): express.Express {
 
   app.use("/api/v1", apiLimiter, v1Router);
 
+  // Health check / root endpoint for platform probes
+  app.get("/", (_req, res) => {
+    res.status(200).json({ success: true, service: "email-ai-backend" });
+  });
+
   app.use(notFoundHandler);
   app.use(errorHandler);
 
