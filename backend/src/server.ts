@@ -1,4 +1,4 @@
-import { env } from "./config/env.js";
+import { assertRuntimeEnv, env } from "./config/env.js";
 import { connectDB } from "./db/index.js";
 import app from "./app.js";
 import { logger, safeErrorMessage } from "./lib/logger.js";
@@ -9,6 +9,7 @@ async function main(): Promise<void> {
     port: env.port,
   });
 
+  assertRuntimeEnv();
   await connectDB(env.mongodbUri);
 
   const server = app.listen(env.port, () => {

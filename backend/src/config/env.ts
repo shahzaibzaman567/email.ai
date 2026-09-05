@@ -62,44 +62,52 @@ if (!parsed.success) {
   throw new Error(`Invalid environment configuration:\n${issues}`);
 }
 
-const isTest = parsed.data.NODE_ENV === "test";
-const missing: string[] = [];
-if (!isTest && !parsed.data.MONGODB_URI) missing.push("MONGODB_URI");
-if (!isTest && !parsed.data.CLERK_SECRET_KEY) missing.push("CLERK_SECRET_KEY");
+const data = parsed.data;
 
-if (missing.length > 0) {
-  throw new Error(
-    `Missing required environment variable(s): ${missing.join(", ")}. ` +
-      "Copy .env.example to .env and fill in the values.",
-  );
+const isTest = data.NODE_ENV === "test";
+
+/** Validate required vars at runtime (not during Vercel build bundling). */
+export function assertRuntimeEnv(): void {
+  if (isTest) return;
+
+  const missing: string[] = [];
+  if (!data.MONGODB_URI) missing.push("MONGODB_URI");
+  if (!data.CLERK_SECRET_KEY) missing.push("CLERK_SECRET_KEY");
+
+  if (missing.length > 0) {
+    throw new Error(
+      `Missing required environment variable(s): ${missing.join(", ")}. ` +
+        "Copy .env.example to .env and fill in the values.",
+    );
+  }
 }
 
 export const env = {
-  encryptionKey: parsed.data.ENCRYPTION_KEY,
-  nodeEnv: parsed.data.NODE_ENV,
-  isProd: parsed.data.NODE_ENV === "production",
+  encryptionKey: data.ENCRYPTION_KEY,
+  nodeEnv: data.NODE_ENV,
+  isProd: data.NODE_ENV === "production",
   isTest,
-  port: parsed.data.PORT,
-  mongodbUri: parsed.data.MONGODB_URI ?? "",
-  clerkSecretKey: parsed.data.CLERK_SECRET_KEY ?? "",
-  clerkPublishableKey: parsed.data.CLERK_PUBLISHABLE_KEY,
-  clientUrl: parsed.data.CLIENT_URL,
-  ownerEmail: parsed.data.OWNER_EMAIL,
-  groqApiKey: parsed.data.GROQ_API_KEY,
-  groqModel: parsed.data.GROQ_MODEL,
-  groqBaseUrl: parsed.data.GROQ_BASE_URL,
+  port: data.PORT,
+  mongodbUri: data.MONGODB_URI ?? "",
+  clerkSecretKey: data.CLERK_SECRET_KEY ?? "",
+  clerkPublishableKey: data.CLERK_PUBLISHABLE_KEY,
+  clientUrl: data.CLIENT_URL,
+  ownerEmail: data.OWNER_EMAIL,
+  groqApiKey: data.GROQ_API_KEY,
+  groqModel: data.GROQ_MODEL,
+  groqBaseUrl: data.GROQ_BASE_URL,
   email: {
-    host: parsed.data.EMAIL_HOST,
-    port: parsed.data.EMAIL_PORT,
-    user: parsed.data.EMAIL_USER,
-    password: parsed.data.EMAIL_PASSWORD,
-    from: parsed.data.EMAIL_FROM,
+    host: data.EMAIL_HOST,
+    port: data.EMAIL_PORT,
+    user: data.EMAIL_USER,
+    password: data.EMAIL_PASSWORD,
+    from: data.EMAIL_FROM,
   },
-  emailTestMode: parsed.data.EMAIL_TEST_MODE,
-  emailMinIntervalMs: parsed.data.EMAIL_MIN_INTERVAL_MS,
+  emailTestMode: data.EMAIL_TEST_MODE,
+  emailMinIntervalMs: data.EMAIL_MIN_INTERVAL_MS,
   inngest: {
-    eventKey: parsed.data.INNGEST_EVENT_KEY,
-    signingKey: parsed.data.INNGEST_SIGNING_KEY,
-    baseUrl: parsed.data.INNGEST_BASE_URL,
+    eventKey: data.INNGEST_EVENT_KEY,
+    signingKey: data.INNGEST_SIGNING_KEY,
+    baseUrl: data.INNGEST_BASE_URL,
   },
 } as const;

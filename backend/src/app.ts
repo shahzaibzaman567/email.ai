@@ -3,7 +3,7 @@ import cors from "cors";
 import helmet from "helmet";
 import { rateLimit } from "express-rate-limit";
 import { serve } from "inngest/express";
-import { env } from "./config/env.js";
+import { assertRuntimeEnv, env } from "./config/env.js";
 import { connectDB } from "./db/index.js";
 import v1Router from "./routes/v1/index.js";
 import { inngest } from "./inngest/client.js";
@@ -32,6 +32,7 @@ export function createApp(): express.Express {
 
   app.use(async (_req, _res, next) => {
     try {
+      assertRuntimeEnv();
       await connectDB(env.mongodbUri);
       next();
     } catch (err) {
