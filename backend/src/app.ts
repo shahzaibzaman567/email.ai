@@ -60,6 +60,9 @@ export function createApp(): express.Express {
     res.status(200).json({ success: true, service: "email-ai-backend" });
   });
 
+  // Respond to favicon requests to avoid 404 noise from platform probes
+  app.get("/favicon.ico", (_req, res) => res.status(204).end());
+
   app.use(notFoundHandler);
   app.use(errorHandler);
 
