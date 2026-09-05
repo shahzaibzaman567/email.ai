@@ -10,3 +10,11 @@ export const inngest = new Inngest({
   isDev: env.nodeEnv !== "production",
   logger,
 });
+
+// Log safe info to help debug Inngest sync/signing issues in production
+logger.info("Inngest client initialized", {
+  hasEventKey: Boolean(env.inngest.eventKey),
+  hasSigningKey: Boolean(env.inngest.signingKey),
+  nodeEnv: env.nodeEnv,
+  isDev: env.nodeEnv !== "production",
+});
