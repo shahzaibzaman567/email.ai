@@ -8,7 +8,7 @@ export function useAdminStats() {
     queryKey: ["admin-stats"],
     queryFn: async () => {
       const token = await getToken();
-      return apiRequest<any>("/admin/dashboard", {
+      return apiRequest<any>("/api/v1/admin/dashboard", {
         token: token ?? undefined
       });
     },

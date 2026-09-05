@@ -7,7 +7,7 @@ export const inngest = new Inngest({
   eventKey: env.inngest.eventKey || undefined,
   signingKey: env.inngest.signingKey || undefined,
   baseUrl: env.inngest.baseUrl || undefined,
-  isDev: env.nodeEnv !== "production",
+  isDev: env.nodeEnv !== "production" && !env.inngest.eventKey,
   logger,
 });
 
@@ -16,5 +16,5 @@ logger.info("Inngest client initialized", {
   hasEventKey: Boolean(env.inngest.eventKey),
   hasSigningKey: Boolean(env.inngest.signingKey),
   nodeEnv: env.nodeEnv,
-  isDev: env.nodeEnv !== "production",
+  isDev: env.nodeEnv !== "production" && !env.inngest.eventKey,
 });
