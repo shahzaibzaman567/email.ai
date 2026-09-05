@@ -14,7 +14,9 @@ export default function AdminPage() {
   const { stats, isLoading, error } = useAdminStats();
 
   const userEmail = user?.primaryEmailAddress?.emailAddress;
-  const isAdmin = userEmail === "shahzaibzaman.official@gmail.com";
+  const ownerEmail = "shahzaibzaman.official@gmail.com";
+  // Case-insensitive email comparison
+  const isAdmin = userEmail && userEmail.toLowerCase() === ownerEmail.toLowerCase();
 
   useEffect(() => {
     if (isLoaded && !isAdmin) {

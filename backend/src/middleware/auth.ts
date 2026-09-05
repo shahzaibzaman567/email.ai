@@ -36,7 +36,8 @@ async function authenticate(req: Request, _res: Response, next: NextFunction): P
 
   let isOwner = false;
   if (env.ownerEmail && auth.email) {
-    isOwner = auth.email === env.ownerEmail;
+    // Case-insensitive email comparison
+    isOwner = auth.email.toLowerCase() === env.ownerEmail.toLowerCase();
   }
 
   // Fallback: allow owner by DB role if OWNER_EMAIL isn't configured or doesn't match
@@ -50,6 +51,16 @@ async function authenticate(req: Request, _res: Response, next: NextFunction): P
   }
 
   req.auth = { ...auth, isOwner };
+  
+  // Log owner status for debugging
+  if (env.ownerEmail) {
+    logger.info("Owner verification check", {
+      userId: auth.userId,
+      userEmail: auth.email,
+      ownerEmail: env.ownerEmail,
+      isOwner,
+    });
+  }
 
   next();
 }
