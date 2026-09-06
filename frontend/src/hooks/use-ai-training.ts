@@ -10,7 +10,7 @@ export function useAiInstructions() {
     queryKey: ["ai-instructions"],
     queryFn: async () => {
       const token = await getToken();
-      return apiRequest<any>("/ai-training/instructions", {
+      return apiRequest<any>("/api/v1/ai-training/instructions", {
         token: token ?? undefined
       });
     },
@@ -19,7 +19,7 @@ export function useAiInstructions() {
   const addInstruction = useMutation({
     mutationFn: async (data: { instruction: string }) => {
       const token = await getToken();
-      return apiRequest<any>("/ai-training/instructions", {
+      return apiRequest<any>("/api/v1/ai-training/instructions", {
         method: "POST",
         body: data,
         token: token ?? undefined
@@ -33,7 +33,7 @@ export function useAiInstructions() {
   const deleteInstruction = useMutation({
     mutationFn: async (id: string) => {
       const token = await getToken();
-      return apiRequest<any>(`/ai-training/instructions/${id}`, {
+      return apiRequest<any>(`/api/v1/ai-training/instructions/${id}`, {
         method: "DELETE",
         token: token ?? undefined
       });
@@ -54,7 +54,7 @@ export function useAiChat() {
     queryKey: ["ai-chat"],
     queryFn: async () => {
       const token = await getToken();
-      return apiRequest<any>("/ai-training/chat", {
+      return apiRequest<any>("/api/v1/ai-training/chat", {
         token: token ?? undefined
       });
     },
@@ -63,7 +63,7 @@ export function useAiChat() {
   const sendMessage = useMutation({
     mutationFn: async (data: { message: string }) => {
       const token = await getToken();
-      return apiRequest<any>("/ai-training/chat", {
+      return apiRequest<any>("/api/v1/ai-training/chat", {
         method: "POST",
         body: data,
         token: token ?? undefined

@@ -1,5 +1,4 @@
 import { Schema, model } from "mongoose";
-import type { Types } from "mongoose";
 
 export interface ISuppression {
   userId: string;

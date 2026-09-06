@@ -1,9 +1,8 @@
 import { Schema, model } from "mongoose";
-import type { Types } from "mongoose";
 import { LEAD_STATUSES, type LeadStatus } from "../../schemas/lead.schema.js";
 
 export interface ILead {
-  userId: Types.ObjectId;
+  userId: string;
   firstName?: string;
   lastName?: string;
   email: string;
@@ -18,7 +17,7 @@ export interface ILead {
 
 const leadSchema = new Schema<ILead>(
   {
-    userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    userId: { type: String, required: true, trim: true },
     firstName: { type: String, trim: true, maxlength: 100 },
     lastName: { type: String, trim: true, maxlength: 100 },
     email: {
