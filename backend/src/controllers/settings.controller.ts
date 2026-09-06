@@ -14,7 +14,6 @@ export async function getColdEmailSettings(req: Request, res: Response): Promise
   
   let settings = await ColdEmailSettingsModel.findOne({ userId }).lean();
   
-  // If settings don't exist yet, we return a default object.
   if (!settings) {
     settings = {
       userId: userId as any,
@@ -43,17 +42,34 @@ export async function getColdEmailSettings(req: Request, res: Response): Promise
 
 export async function updateColdEmailSettings(req: Request, res: Response): Promise<void> {
   const userId = req.auth!.userId;
-  const updates = { ...req.body };
-  
-  if (updates.groqApiKey && updates.groqApiKey.includes("...")) {
-    delete updates.groqApiKey;
-  }
-  // Don't overwrite smtpPassword if user sent back the masked placeholder
-  if (updates.smtpPassword === "••••••••") {
-    delete updates.smtpPassword;
+  const updates: any = {};
+
+  // Whitelist allowed fields
+  const allowedFields = [
+    "service", "customService", "targetBusiness", "customTargetBusiness",
+    "targetCountries", "emailGoal", "customEmailGoal", "emailLength",
+    "tone", "customTone", "cta", "customCta", "personalizationLevel",
+    "emailSignature", "subjectMode", "sameSubject", "customSubjectInstruction",
+    "groqApiKey", "smtpHost", "smtpPort", "smtpUser", "smtpPassword",
+    "smtpFrom", "dailyLimit", "scheduleStartTime", "scheduleEndTime",
+    "scheduleTimezone"
+  ];
+
+  for (const field of allowedFields) {
+    if (field in req.body && req.body[field] !== undefined && req.body[field] !== null && req.body[field] !== "") {
+      const value = req.body[field];
+      
+      // Skip masked values
+      if ((field === "groqApiKey" && typeof value === "string" && value.includes("...")) ||
+          (field === "smtpPassword" && value === "••••••••")) {
+        continue;
+      }
+
+      updates[field] = value;
+    }
   }
 
-  // Encrypt sensitive fields before saving
+  // Encrypt sensitive fields
   if (updates.smtpPassword) {
     updates.smtpPassword = encrypt(updates.smtpPassword);
   }
@@ -67,8 +83,11 @@ export async function updateColdEmailSettings(req: Request, res: Response): Prom
     { new: true, upsert: true, setDefaultsOnInsert: true }
   ).lean();
 
-  if (settings.groqApiKey) {
+  if (settings?.groqApiKey) {
     (settings as any).groqApiKey = maskApiKey(settings.groqApiKey);
+  }
+  if (settings?.smtpPassword) {
+    (settings as any).smtpPassword = "••••••••";
   }
 
   res.json(ok("Settings updated successfully", settings));
