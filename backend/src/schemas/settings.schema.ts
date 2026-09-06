@@ -71,7 +71,6 @@ export const coldEmailSettingsSchema = z
     scheduleEndTime: optionalString(10), // "17:00" format
     scheduleTimezone: optionalString(50).default("UTC"),
   })
-  .strict()
   .refine((data) => Object.keys(data).length > 0, {
     message: "At least one field must be provided",
   })
