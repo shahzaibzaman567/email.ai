@@ -3,6 +3,7 @@ import { LeadModel } from "../db/models/lead.model.js";
 import { ColdEmailSettingsModel } from "../db/models/settings.model.js";
 import { AiInstructionModel } from "../db/models/ai-instruction.model.js";
 import { generateColdEmail } from "../services/ai.service.js";
+import { decrypt } from "../lib/encryption.js";
 import { ok } from "../lib/response.js";
 import { NotFoundError, ValidationError } from "../lib/errors.js";
 
@@ -32,6 +33,9 @@ export async function previewEmail(req: Request, res: Response): Promise<void> {
   // Merge with overrides
   const settings = { ...userSettings, ...(campaignSettingsOverrides || {}) };
 
+  // Decrypt sensitive fields before use
+  const groqApiKey = settings.groqApiKey ? decrypt(settings.groqApiKey as string) : undefined;
+
   // Load instructions
   const instructions = await AiInstructionModel.find({ userId, isActive: true }).lean();
   const instructionsText = instructions.map(i => i.instruction).join("\n");
@@ -45,7 +49,8 @@ export async function previewEmail(req: Request, res: Response): Promise<void> {
       notes: lead.notes ?? undefined,
     },
     settings,
-    instructionsText
+    instructionsText,
+    groqApiKey
   );
 
   res.json(ok("Email preview generated", email));
