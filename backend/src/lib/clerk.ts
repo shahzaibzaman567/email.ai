@@ -1,4 +1,5 @@
-import { verifyToken, clerkClient } from "@clerk/backend";
+import { verifyToken } from "@clerk/backend";
+import { createClerkClient } from "@clerk/backend";
 import { env } from "../config/env.js";
 import { UnauthorizedError } from "./errors.js";
 import { logger, safeErrorMessage } from "./logger.js";
@@ -29,8 +30,11 @@ export async function verifyClerkToken(token: string): Promise<ClerkAuth> {
     }
 
     // If email not in token, fetch from Clerk API
-    if (!email) {
+    if (!email && env.clerkSecretKey) {
       try {
+        const clerkClient = createClerkClient({
+          secretKey: env.clerkSecretKey,
+        });
         const user = await clerkClient.users.getUser(userId);
         email = user.primaryEmailAddress?.emailAddress;
         
