@@ -1,12 +1,11 @@
-import { Schema, model } from "mongoose";
-import type { Types } from "mongoose";
+import { Schema, model, Types } from "mongoose";
 import {
   EMAIL_LOG_STATUSES,
   type EmailLogStatus,
 } from "../../schemas/email-log.schema.js";
 
 export interface IEmailLog {
-  userId: Types.ObjectId;
+  userId: string;
   leadId: Types.ObjectId;
   campaignId: Types.ObjectId;
   recipient: string;
@@ -24,7 +23,7 @@ export interface IEmailLog {
 
 const emailLogSchema = new Schema<IEmailLog>(
   {
-    userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    userId: { type: String, required: true, trim: true },
     leadId: {
       type: Schema.Types.ObjectId,
       ref: "Lead",

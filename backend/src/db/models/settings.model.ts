@@ -2,7 +2,7 @@ import { Schema, model } from "mongoose";
 import type { Types } from "mongoose";
 
 export interface IColdEmailSettings {
-  userId: Types.ObjectId;
+  userId: string;
   service?: string;
   customService?: string;
   targetBusiness?: string;
@@ -41,7 +41,7 @@ export interface IColdEmailSettings {
 
 const coldEmailSettingsSchema = new Schema<IColdEmailSettings>(
   {
-    userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    userId: { type: String, required: true, trim: true },
     service: { type: String, trim: true },
     customService: { type: String, trim: true },
     targetBusiness: { type: String, trim: true },

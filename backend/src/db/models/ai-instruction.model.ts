@@ -1,8 +1,7 @@
 import { Schema, model } from "mongoose";
-import type { Types } from "mongoose";
 
 export interface IAiInstruction {
-  userId: Types.ObjectId;
+  userId: string;
   instruction: string;
   isActive: boolean;
   source: "chat" | "manual";
@@ -12,7 +11,7 @@ export interface IAiInstruction {
 
 const aiInstructionSchema = new Schema<IAiInstruction>(
   {
-    userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    userId: { type: String, required: true, trim: true },
     instruction: { type: String, required: true, trim: true },
     isActive: { type: Boolean, default: true },
     source: { type: String, enum: ["chat", "manual"], default: "manual" },

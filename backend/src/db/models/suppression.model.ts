@@ -2,7 +2,7 @@ import { Schema, model } from "mongoose";
 import type { Types } from "mongoose";
 
 export interface ISuppression {
-  userId: Types.ObjectId;
+  userId: string;
   email: string;
   reason: "bounce" | "unsubscribe" | "manual";
   createdAt: Date;
@@ -11,7 +11,7 @@ export interface ISuppression {
 
 const suppressionSchema = new Schema<ISuppression>(
   {
-    userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    userId: { type: String, required: true, trim: true },
     email: {
       type: String,
       required: true,

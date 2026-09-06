@@ -1,9 +1,8 @@
 import { Schema, model } from "mongoose";
-import type { Types } from "mongoose";
 import { CAMPAIGN_STATUSES, type CampaignStatus } from "../../schemas/campaign.schema.js";
 
 export interface ICampaign {
-  userId: Types.ObjectId;
+  userId: string;
   name: string;
   description?: string;
   status: CampaignStatus;
@@ -23,7 +22,7 @@ export interface ICampaign {
 
 const campaignSchema = new Schema<ICampaign>(
   {
-    userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    userId: { type: String, required: true, trim: true },
     name: { type: String, required: true, trim: true, maxlength: 120 },
     description: { type: String, trim: true, maxlength: 500 },
     status: {

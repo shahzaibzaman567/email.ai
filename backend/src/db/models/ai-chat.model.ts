@@ -1,8 +1,7 @@
 import { Schema, model } from "mongoose";
-import type { Types } from "mongoose";
 
 export interface IAiChatMessage {
-  userId: Types.ObjectId;
+  userId: string;
   role: "user" | "assistant";
   content: string;
   createdAt: Date;
@@ -11,7 +10,7 @@ export interface IAiChatMessage {
 
 const aiChatMessageSchema = new Schema<IAiChatMessage>(
   {
-    userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    userId: { type: String, required: true, trim: true },
     role: { type: String, enum: ["user", "assistant"], required: true },
     content: { type: String, required: true },
   },
