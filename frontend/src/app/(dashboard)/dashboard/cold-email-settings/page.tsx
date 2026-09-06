@@ -9,7 +9,22 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { useSettings } from "@/hooks/use-settings";
 import { toast } from "sonner";
-import { Loader2, Mail, ExternalLink } from "lucide-react";
+import { Loader2, Mail, ExternalLink, Globe } from "lucide-react";
+
+const TIMEZONE_OPTIONS = [
+  { label: "Pakistan (PKT)", value: "Asia/Karachi" },
+  { label: "India (IST)", value: "Asia/Kolkata" },
+  { label: "Dubai (GST)", value: "Asia/Dubai" },
+  { label: "London (GMT/BST)", value: "Europe/London" },
+  { label: "New York (EST/EDT)", value: "America/New_York" },
+  { label: "Los Angeles (PST/PDT)", value: "America/Los_Angeles" },
+  { label: "Tokyo (JST)", value: "Asia/Tokyo" },
+  { label: "Sydney (AEDT)", value: "Australia/Sydney" },
+  { label: "Paris (CET)", value: "Europe/Paris" },
+  { label: "Beijing (CST)", value: "Asia/Shanghai" },
+  { label: "São Paulo (BRT)", value: "America/Sao_Paulo" },
+  { label: "UTC", value: "UTC" },
+];
 
 export default function ColdEmailSettingsPage() {
   const { settings, isLoading, updateSettings } = useSettings();
@@ -17,7 +32,11 @@ export default function ColdEmailSettingsPage() {
 
   useEffect(() => {
     if (settings) {
-      setFormData(settings);
+      const savedTz = typeof window !== "undefined" ? localStorage.getItem("worldclock_tz") : null;
+      setFormData({
+        ...settings,
+        scheduleTimezone: settings.scheduleTimezone || savedTz || "Asia/Karachi",
+      });
     }
   }, [settings]);
 
@@ -27,10 +46,16 @@ export default function ColdEmailSettingsPage() {
 
   const handleSave = async () => {
     try {
-      await updateSettings.mutateAsync(formData);
+      const { _id, __v, userId, createdAt, updatedAt, ...cleanData } = formData;
+      if (cleanData.smtpPort !== undefined) cleanData.smtpPort = parseInt(String(cleanData.smtpPort)) || 587;
+      if (cleanData.dailyLimit !== undefined) cleanData.dailyLimit = parseInt(String(cleanData.dailyLimit)) || 100;
+      await updateSettings.mutateAsync(cleanData);
       toast.success("Settings saved successfully");
     } catch (err: any) {
-      toast.error(err.message || "Failed to save settings");
+      const msg = err.details
+        ? err.details.map((d: any) => `${d.field}: ${d.message}`).join("; ")
+        : err.message || "Failed to save settings";
+      toast.error(msg);
     }
   };
 
@@ -259,9 +284,25 @@ export default function ColdEmailSettingsPage() {
         <Card>
           <CardHeader>
             <CardTitle>Schedule & Limits</CardTitle>
-            <CardDescription>When should emails be sent?</CardDescription>
+            <CardDescription>When should emails be sent? Timezone is auto-set from World Clock.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2">
+                <Globe className="h-4 w-4" /> Timezone
+              </Label>
+              <Select value={formData.scheduleTimezone || "Asia/Karachi"} onValueChange={(v) => handleChange("scheduleTimezone", v)}>
+                <SelectTrigger><SelectValue placeholder="Select timezone" /></SelectTrigger>
+                <SelectContent>
+                  {TIMEZONE_OPTIONS.map((tz) => (
+                    <SelectItem key={tz.value} value={tz.value}>{tz.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-slate-500">
+                Set your timezone on the <a href="/dashboard/world-clock" className="text-blue-600 hover:underline font-semibold">World Clock</a> page to auto-sync.
+              </p>
+            </div>
             <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label>Daily Limit (Emails)</Label>

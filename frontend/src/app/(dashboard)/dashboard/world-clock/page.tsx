@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { AnalogClock } from "@/components/dashboard/analog-clock";
+import { toast } from "sonner";
+import { Check } from "lucide-react";
 
 const COMMON_TIMEZONES = [
   { label: "Pakistan (PKT)", value: "Asia/Karachi" },
@@ -43,6 +45,15 @@ export default function WorldClockPage() {
   const [digitalTime, setDigitalTime] = useState("");
   const [dateStr, setDateStr] = useState("");
   const [utcOffset, setUtcOffset] = useState("");
+  const [savedTz, setSavedTz] = useState<string | null>(null);
+
+  useEffect(() => {
+    const saved = localStorage.getItem("worldclock_tz");
+    if (saved) {
+      setSelectedTz(saved);
+      setSavedTz(saved);
+    }
+  }, []);
 
   useEffect(() => {
     const tick = () => {
@@ -59,7 +70,15 @@ export default function WorldClockPage() {
     return () => clearInterval(interval);
   }, [selectedTz]);
 
+  const handleSetAsEmailTimezone = () => {
+    localStorage.setItem("worldclock_tz", selectedTz);
+    setSavedTz(selectedTz);
+    const label = COMMON_TIMEZONES.find((tz) => tz.value === selectedTz)?.label ?? selectedTz;
+    toast.success(`${label} set as your email schedule timezone`);
+  };
+
   const selectedLabel = COMMON_TIMEZONES.find((tz) => tz.value === selectedTz)?.label ?? selectedTz;
+  const isCurrentTzSaved = savedTz === selectedTz;
 
   return (
     <div className="max-w-2xl mx-auto py-8 px-4">
@@ -108,6 +127,18 @@ export default function WorldClockPage() {
             {dateStr}
           </div>
         </div>
+
+        <button
+          onClick={handleSetAsEmailTimezone}
+          disabled={isCurrentTzSaved}
+          className="mt-2 inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        >
+          <Check className="h-4 w-4" />
+          {isCurrentTzSaved ? "Already Set" : "Set as Email Timezone"}
+        </button>
+        <p className="text-xs text-muted-foreground mt-2">
+          This timezone will be used for your Cold Email schedule.
+        </p>
       </div>
 
       {/* All timezones grid */}
