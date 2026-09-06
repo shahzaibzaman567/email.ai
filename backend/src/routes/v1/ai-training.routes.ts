@@ -1,6 +1,5 @@
 import { Router } from "express";
 import { asyncHandler } from "../../lib/async-handler.js";
-import { requireOwner } from "../../middleware/owner.js";
 import {
   getInstructions,
   addInstruction,
@@ -12,9 +11,7 @@ import {
 
 const router = Router();
 
-// Protect all AI training routes
-router.use(requireOwner);
-
+// AI Training routes - available to all authenticated users
 router.get("/instructions", asyncHandler(getInstructions));
 router.post("/instructions", asyncHandler(addInstruction));
 router.put("/instructions/:id", asyncHandler(updateInstruction));
