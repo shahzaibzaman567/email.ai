@@ -1,0 +1,6 @@
+tree a7e3e57558bd9b26af515d28036ff8ad4342ce3c
+parent fb7e4c1fcfc2dcca1fc3d2bc7b3eff8fd2f65105
+author shahzaibzaman567 <shahzaibzaman567@gmail.com> 1788644852 +0500
+committer shahzaibzaman567 <shahzaibzaman567@gmail.com> 1788644852 +0500
+
+chore(inngest): log presence of signing/event keys and dev mode for debugging
