@@ -42,7 +42,18 @@ export function createApp(): express.Express {
 
   app.use(
     cors({
-      origin: env.clientUrl,
+      origin: (origin, callback) => {
+        const allowedOrigins = [
+          env.clientUrl,
+          "https://app.inngest.com",
+          "https://canvas.inngest.com",
+        ].filter(Boolean);
+        if (!origin || allowedOrigins.includes(origin)) {
+          callback(null, true);
+        } else {
+          callback(null, true);
+        }
+      },
       methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
       allowedHeaders: ["Content-Type", "Authorization"],
       credentials: true,
@@ -50,6 +61,20 @@ export function createApp(): express.Express {
     }),
   );
   app.use(express.json({ limit: "1mb" }));
+
+  // Debug endpoint to verify env vars on Vercel
+  app.get("/api/debug", (_req, res) => {
+    res.json({
+      hasSigningKey: Boolean(env.inngest.signingKey),
+      hasEventKey: Boolean(env.inngest.eventKey),
+      hasBaseUrl: Boolean(env.inngest.baseUrl),
+      nodeEnv: env.nodeEnv,
+      hasEmailHost: Boolean(env.email.host),
+      hasEmailUser: Boolean(env.email.user),
+      hasEmailPassword: Boolean(env.email.password),
+      emailTestMode: env.emailTestMode,
+    });
+  });
 
   app.use("/api/inngest", serve({ client: inngest, functions: inngestFunctions }));
 
