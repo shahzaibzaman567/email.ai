@@ -27,6 +27,29 @@ router.get("/debug/owner", (_req, res) => {
 });
 
 router.use(requireAuth);
+
+// Debug: Check user's saved SMTP settings from DB
+router.get("/debug/my-smtp", asyncHandler(async (req, res) => {
+  const { ColdEmailSettingsModel } = await import("../../db/models/settings.model.js");
+  const { decrypt } = await import("../../lib/encryption.js");
+  const userId = req.auth!.userId;
+  const settings = await ColdEmailSettingsModel.findOne({ userId }).lean();
+  if (!settings) {
+    res.json({ configured: false, message: "No settings saved yet. Go to Cold Email Settings page and save your SMTP config." });
+    return;
+  }
+  const s = settings as any;
+  res.json({
+    configured: !!(s.smtpHost && s.smtpUser && s.smtpPassword),
+    smtpHost: s.smtpHost || "NOT_SET",
+    smtpPort: s.smtpPort || "NOT_SET",
+    smtpUser: s.smtpUser || "NOT_SET",
+    smtpPassword: s.smtpPassword ? "ENCRYPTED (exists)" : "NOT_SET",
+    smtpFrom: s.smtpFrom || "NOT_SET",
+    groqApiKey: s.groqApiKey ? "ENCRYPTED (exists)" : "NOT_SET",
+  });
+}));
+
 router.use("/leads", leadRoutes);
 router.use("/campaigns", campaignRoutes);
 router.use("/analytics", analyticsRoutes);

@@ -92,8 +92,8 @@ export function isRateLimitError(err: unknown): boolean {
  * but never actually transmitted. In test mode no SMTP credentials are needed.
  */
 export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult> {
-  if (env.emailTestMode) {
-    logger.info("EMAIL_TEST_MODE: email would be sent", {
+  if (env.emailTestMode && !input.userSmtp) {
+    logger.info("EMAIL_TEST_MODE: email would be sent (no user SMTP configured)", {
       to: input.to,
       subject: input.subject,
       html: input.html,
@@ -125,7 +125,7 @@ export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult>
 
     return {
       providerMessageId: info.messageId ?? `unknown-${randomUUID()}`,
-      provider: env.email.host ?? "smtp",
+      provider: input.userSmtp?.host ?? env.email.host ?? "smtp",
       testMode: false,
     };
   } catch (err) {
