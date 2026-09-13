@@ -33,11 +33,17 @@ export const campaignLaunch = inngest.createFunction(
       );
     });
 
+    // Stagger emails: send one email every ~3 minutes to avoid bulk spam detection.
+    // e.g. 100 leads = spread over ~5 hours, 500 leads = ~25 hours (across schedule windows)
+    const INTERVAL_MINUTES = 3;
+
     await step.sendEvent(
       "queue-lead-emails",
-      leadIds.map((leadId) => ({
+      leadIds.map((leadId, index) => ({
         name: "email/campaign.requested",
         data: { campaignId, leadId, userId },
+        // Each lead fires after an increasing delay
+        ts: Date.now() + index * INTERVAL_MINUTES * 60 * 1000,
       })),
     );
 
