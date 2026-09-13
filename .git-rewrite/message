@@ -1,1 +1,0 @@
-fix(auth): owner check fallback to DB role

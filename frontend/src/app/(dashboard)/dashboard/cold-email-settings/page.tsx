@@ -98,7 +98,7 @@ export default function ColdEmailSettingsPage() {
                 type="password"
                 value={formData.groqApiKey || ""}
                 onChange={(e) => handleChange("groqApiKey", e.target.value)}
-                placeholder="e.g. gsk_AbCdEf..."
+                placeholder="Enter your Groq API key"
               />
               <p className="text-xs text-slate-500 mt-1">
                 Don&apos;t have an API Key? Go to the{" "}
