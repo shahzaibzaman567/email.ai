@@ -28,23 +28,12 @@ export function createApp(): express.Express {
   app.set("trust proxy", 1);
   app.disable("x-powered-by");
 
-  app.use(helmet());
-
-  app.use(async (_req, _res, next) => {
-    try {
-      assertRuntimeEnv();
-      await connectDB(env.mongodbUri);
-      next();
-    } catch (err) {
-      next(err);
-    }
-  });
-
   app.use(
     cors({
       origin: (origin, callback) => {
         const allowedOrigins = [
           env.clientUrl,
+          "https://email-ai-sage.vercel.app",
           "https://app.inngest.com",
           "https://canvas.inngest.com",
         ].filter(Boolean);
@@ -60,6 +49,18 @@ export function createApp(): express.Express {
       maxAge: 86_400,
     }),
   );
+
+  app.use(helmet());
+
+  app.use(async (_req, _res, next) => {
+    try {
+      assertRuntimeEnv();
+      await connectDB(env.mongodbUri);
+      next();
+    } catch (err) {
+      next(err);
+    }
+  });
   app.use(express.json({ limit: "1mb" }));
 
   // Debug endpoint to verify env vars on Vercel
