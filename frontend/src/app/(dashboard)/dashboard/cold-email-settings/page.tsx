@@ -141,7 +141,7 @@ export default function ColdEmailSettingsPage() {
               </p>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="imap-password">IMAP App Password (for Reply Detection)</Label>
+              <Label htmlFor="imap-password">Gmail App Password (Required for Sending & Replies)</Label>
               <Input
                 id="imap-password"
                 type="password"
@@ -150,7 +150,7 @@ export default function ColdEmailSettingsPage() {
                 placeholder="Gmail App Password for reply tracking"
               />
               <p className="text-xs text-slate-500 mt-1">
-                Optional. If set, the system will automatically detect replies from your inbox and mark leads as &quot;replied&quot;.
+                Required. The system uses this to send your emails and automatically detect replies.
               </p>
               <div className="rounded-md bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 p-3 text-xs space-y-1">
                 <p className="font-semibold text-amber-800 dark:text-amber-300">How to get Gmail App Password:</p>
