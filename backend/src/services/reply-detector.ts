@@ -162,6 +162,28 @@ export async function detectRepliesForUser(
                   { _id: matchedLeadId },
                   { $set: { status: "replied" } }
                 );
+
+                // Find the latest sent email log for this lead to update its status
+                // This ensures Campaign stats get updated on the dashboard
+                const emailLog = await EmailLogModel.findOne({
+                  leadId: matchedLeadId,
+                  status: "sent"
+                }).sort({ createdAt: -1 });
+
+                if (emailLog) {
+                  await EmailLogModel.updateOne(
+                    { _id: emailLog._id },
+                    { $set: { status: "replied", updatedAt: new Date() } }
+                  );
+                  
+                  // Trigger campaign stats update
+                  try {
+                    const { updateCampaignStats } = await import("./email-log.service.js");
+                    await updateCampaignStats(emailLog.campaignId);
+                  } catch (statErr) {
+                    logger.error("Failed to update campaign stats on reply", { error: String(statErr) });
+                  }
+                }
                 result.repliesFound++;
                 result.leadsUpdated.push(matchedLeadId);
                 logger.info("Reply detected and lead updated", {
