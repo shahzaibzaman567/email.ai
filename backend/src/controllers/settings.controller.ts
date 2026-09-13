@@ -21,7 +21,7 @@ export async function getColdEmailSettings(req: Request, res: Response): Promise
       personalizationLevel: "High",
       emailSignature: "Best regards,\nShahzaib",
       subjectMode: "ai_personalized",
-      dailyLimit: 100,
+      dailyLimit: 500,
       scheduleStartTime: "09:00",
       scheduleEndTime: "17:00",
       scheduleTimezone: "UTC",
@@ -33,9 +33,6 @@ export async function getColdEmailSettings(req: Request, res: Response): Promise
   if (settings && settings.groqApiKey) {
     (settings as any).groqApiKey = maskApiKey(settings.groqApiKey);
   }
-  if (settings && (settings as any).smtpPassword) {
-    (settings as any).smtpPassword = "••••••••";
-  }
 
   res.json(ok("Settings fetched successfully", settings));
 }
@@ -44,14 +41,13 @@ export async function updateColdEmailSettings(req: Request, res: Response): Prom
   const userId = req.auth!.userId;
   const updates: any = {};
 
-  // Whitelist allowed fields
   const allowedFields = [
     "service", "customService", "targetBusiness", "customTargetBusiness",
     "targetCountries", "emailGoal", "customEmailGoal", "emailLength",
     "tone", "customTone", "cta", "customCta", "personalizationLevel",
     "emailSignature", "subjectMode", "sameSubject", "customSubjectInstruction",
-    "groqApiKey", "smtpHost", "smtpPort", "smtpUser", "smtpPassword",
-    "smtpFrom", "dailyLimit", "scheduleStartTime", "scheduleEndTime",
+    "groqApiKey", "smtpFrom",
+    "dailyLimit", "scheduleStartTime", "scheduleEndTime",
     "scheduleTimezone"
   ];
 
@@ -59,9 +55,7 @@ export async function updateColdEmailSettings(req: Request, res: Response): Prom
     if (field in req.body && req.body[field] !== undefined && req.body[field] !== null && req.body[field] !== "") {
       const value = req.body[field];
       
-      // Skip masked values
-      if ((field === "groqApiKey" && typeof value === "string" && value.includes("...")) ||
-          (field === "smtpPassword" && value === "••••••••")) {
+      if (field === "groqApiKey" && typeof value === "string" && value.includes("...")) {
         continue;
       }
 
@@ -69,10 +63,10 @@ export async function updateColdEmailSettings(req: Request, res: Response): Prom
     }
   }
 
-  // Encrypt sensitive fields
-  if (updates.smtpPassword) {
-    updates.smtpPassword = encrypt(updates.smtpPassword);
+  if (updates.dailyLimit && updates.dailyLimit > 500) {
+    updates.dailyLimit = 500;
   }
+
   if (updates.groqApiKey) {
     updates.groqApiKey = encrypt(updates.groqApiKey);
   }
@@ -85,9 +79,6 @@ export async function updateColdEmailSettings(req: Request, res: Response): Prom
 
   if (settings?.groqApiKey) {
     (settings as any).groqApiKey = maskApiKey(settings.groqApiKey);
-  }
-  if (settings?.smtpPassword) {
-    (settings as any).smtpPassword = "••••••••";
   }
 
   res.json(ok("Settings updated successfully", settings));

@@ -5,6 +5,7 @@ import { leadUpdateSchema, leadListQuerySchema } from "../../schemas/lead.schema
 import {
   createLead,
   deleteLead,
+  deleteAllLeads,
   getLead,
   listLeads,
   updateLead,
@@ -16,6 +17,7 @@ const router = Router();
 router.get("/", validateQuery(leadListQuerySchema), asyncHandler(listLeads));
 router.post("/", asyncHandler(createLead));
 router.post("/validate", asyncHandler(validateLeads));
+router.delete("/all", asyncHandler(deleteAllLeads));
 router.get("/:id", asyncHandler(getLead));
 router.put("/:id", validateBody(leadUpdateSchema), asyncHandler(updateLead));
 router.patch("/:id", validateBody(leadUpdateSchema), asyncHandler(updateLead));

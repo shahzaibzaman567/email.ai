@@ -14,6 +14,7 @@ import {
   ChevronRight,
   Loader2,
   Eye,
+  AlertTriangle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,7 +36,7 @@ import {
 } from "@/components/ui/dialog";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { EmptyState } from "@/components/dashboard/empty-state";
-import { useLeads, useDeleteLead } from "@/hooks/use-leads";
+import { useLeads, useDeleteLead, useDeleteAllLeads } from "@/hooks/use-leads";
 import { toast } from "sonner";
 import type { Lead } from "@/types/api";
 
@@ -64,6 +65,7 @@ export default function LeadsPage() {
   });
 
   const { mutateAsync: deleteLead, isPending: isDeleting } = useDeleteLead();
+  const { mutateAsync: deleteAllLeads, isPending: isDeletingAll } = useDeleteAllLeads();
 
   const totalPages = data ? Math.ceil(data.total / data.pageSize) : 1;
 
@@ -77,18 +79,42 @@ export default function LeadsPage() {
     }
   };
 
+  const handleDeleteAll = async () => {
+    if (!confirm("Are you sure you want to delete ALL leads? This action cannot be undone.")) return;
+    try {
+      await deleteAllLeads();
+      toast.success("All leads deleted successfully");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to delete leads");
+    }
+  };
+
   return (
     <>
       <PageHeader
         title="Leads"
         description="Import, manage and organize your prospect list."
         actions={
-          <Button asChild className="bg-blue-600 hover:bg-blue-700 text-white">
-            <Link href="/dashboard/leads/import">
-              <Upload className="h-4 w-4 mr-2" />
-              Import Leads
-            </Link>
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="destructive"
+              onClick={handleDeleteAll}
+              disabled={isDeletingAll || !data?.data.length}
+            >
+              {isDeletingAll ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Trash2 className="h-4 w-4 mr-2" />
+              )}
+              Delete All
+            </Button>
+            <Button asChild className="bg-blue-600 hover:bg-blue-700 text-white">
+              <Link href="/dashboard/leads/import">
+                <Upload className="h-4 w-4 mr-2" />
+                Import Leads
+              </Link>
+            </Button>
+          </div>
         }
       />
 
@@ -107,7 +133,7 @@ export default function LeadsPage() {
         </div>
 
         <div className="flex flex-wrap gap-2 w-full sm:w-auto">
-          {["", "pending", "sent", "replied", "bounced"].map((st) => (
+          {["", "pending", "sent", "replied", "bounced", "failed"].map((st) => (
             <Button
               key={st}
               variant={statusFilter === st ? "default" : "outline"}

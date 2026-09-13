@@ -336,3 +336,9 @@ export async function deleteLead(req: Request, res: Response): Promise<void> {
 
   res.json(ok("Lead deleted successfully", { id: doc._id.toString() }));
 }
+
+export async function deleteAllLeads(req: Request, res: Response): Promise<void> {
+  const userId = req.auth!.userId;
+  const result = await LeadModel.deleteMany({ userId });
+  res.json(ok("All leads deleted successfully", { deletedCount: result.deletedCount }));
+}

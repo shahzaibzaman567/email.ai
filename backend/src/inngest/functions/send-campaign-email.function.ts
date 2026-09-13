@@ -57,7 +57,7 @@ export const sendCampaignEmail = inngest.createFunction(
       if (!userSettings) {
         userSettings = {
           userId: userId as any,
-          dailyLimit: 100,
+          dailyLimit: 500,
           scheduleStartTime: "09:00",
           scheduleEndTime: "17:00",
           scheduleTimezone: "UTC",
@@ -73,6 +73,19 @@ export const sendCampaignEmail = inngest.createFunction(
       
       const settings = userSettings as any;
       
+      // Check daily limit
+      const todayStart = new Date();
+      todayStart.setUTCHours(0, 0, 0, 0);
+      const emailsSentToday = await EmailLogModel.countDocuments({
+        userId,
+        status: { $in: ["sent", "sending"] },
+        createdAt: { $gte: todayStart },
+      });
+      
+      if (emailsSentToday >= (settings.dailyLimit || 500)) {
+        return { dailyLimitReached: true } as any;
+      }
+      
       return {
         leadId: lead._id.toString(),
         userId,
@@ -86,17 +99,8 @@ export const sendCampaignEmail = inngest.createFunction(
         campaignSettingsOverrides: campaign.settings || {},
         userSettings: settings,
         instructionsText,
-        // Per-user SMTP (if configured)
-        // Decrypt sensitive keys
-        userSmtp: (settings.smtpHost && settings.smtpUser && settings.smtpPassword)
-          ? {
-              host: settings.smtpHost as string,
-              port: (settings.smtpPort ?? 587) as number,
-              user: settings.smtpUser as string,
-              password: decrypt(settings.smtpPassword as string),
-              from: (settings.smtpFrom ?? settings.smtpUser) as string,
-            }
-          : undefined,
+        // From email only (uses platform SMTP)
+        smtpFrom: settings.smtpFrom || undefined,
         groqApiKey: settings.groqApiKey ? decrypt(settings.groqApiKey) : undefined,
       };
     });
@@ -105,11 +109,15 @@ export const sendCampaignEmail = inngest.createFunction(
       return { status: "skipped", reason: "lead_or_campaign_missing" };
     }
 
+    if ((context as any).dailyLimitReached) {
+      return { status: "skipped", reason: "daily_limit_reached" };
+    }
+
     if (context.campaignStatus === "paused" || context.campaignStatus === "completed" || context.campaignStatus === "failed") {
       return { status: "skipped", reason: `campaign_is_${context.campaignStatus}` };
     }
 
-    const { scheduleStartTime = "09:00", scheduleEndTime = "17:00", scheduleTimezone = "UTC", dailyLimit = 100 } = context.userSettings;
+    const { scheduleStartTime = "09:00", scheduleEndTime = "17:00", scheduleTimezone = "UTC" } = context.userSettings;
 
     // To properly sleep, we do it at the step level:
     const now = new Date();
@@ -200,7 +208,7 @@ export const sendCampaignEmail = inngest.createFunction(
             to: context.recipient,
             subject: email.subject,
             text: email.body,
-            userSmtp: (context as any).userSmtp,
+            from: context.smtpFrom,
           });
           return { outcome: "sent" as const, result };
         } catch (sendErr) {

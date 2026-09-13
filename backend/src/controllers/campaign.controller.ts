@@ -341,3 +341,9 @@ export async function cancelCampaign(req: Request, res: Response): Promise<void>
 
   res.json(ok("Campaign cancelled successfully", serializeCampaign(campaign)));
 }
+
+export async function deleteAllCampaigns(req: Request, res: Response): Promise<void> {
+  const userId = req.auth!.userId;
+  const result = await CampaignModel.deleteMany({ userId });
+  res.json(ok("All campaigns deleted successfully", { deletedCount: result.deletedCount }));
+}

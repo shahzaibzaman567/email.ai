@@ -140,3 +140,21 @@ export function useCancelCampaign() {
     },
   });
 }
+
+export function useDeleteAllCampaigns() {
+  const { getToken } = useAuth();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const token = await getToken();
+      return apiRequest<{ deletedCount: number }>(`${API.endpoints.campaigns}/all`, {
+        method: "DELETE",
+        token: token ?? undefined,
+      });
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["campaigns"] });
+      void queryClient.invalidateQueries({ queryKey: ["analytics"] });
+    },
+  });
+}

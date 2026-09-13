@@ -10,12 +10,14 @@ import {
   pauseCampaign,
   resumeCampaign,
   cancelCampaign,
+  deleteAllCampaigns,
 } from "../../controllers/campaign.controller.js";
 
 const router = Router();
 
 router.get("/", validateQuery(campaignListQuerySchema), asyncHandler(listCampaigns));
 router.post("/", validateBody(campaignCreateSchema), asyncHandler(createCampaign));
+router.delete("/all", asyncHandler(deleteAllCampaigns));
 router.get("/:id", asyncHandler(getCampaign));
 router.post("/:id/launch", validateBody(campaignLaunchSchema), asyncHandler(launchCampaign));
 router.post("/:id/pause", asyncHandler(pauseCampaign));

@@ -110,3 +110,21 @@ export function useDeleteLead() {
     },
   });
 }
+
+export function useDeleteAllLeads() {
+  const { getToken } = useAuth();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const token = await getToken();
+      return apiRequest<{ deletedCount: number }>(`${API.endpoints.leads}/all`, {
+        method: "DELETE",
+        token: token ?? undefined,
+      });
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["leads"] });
+      void queryClient.invalidateQueries({ queryKey: ["analytics"] });
+    },
+  });
+}

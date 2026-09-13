@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { useSettings } from "@/hooks/use-settings";
 import { toast } from "sonner";
-import { Loader2, Mail, ExternalLink, Globe } from "lucide-react";
+import { Loader2, Mail, ExternalLink, Globe, AlertTriangle } from "lucide-react";
 
 const TIMEZONE_OPTIONS = [
   { label: "Pakistan (PKT)", value: "Asia/Karachi" },
@@ -47,8 +47,10 @@ export default function ColdEmailSettingsPage() {
   const handleSave = async () => {
     try {
       const { _id, __v, userId, createdAt, updatedAt, ...cleanData } = formData;
-      if (cleanData.smtpPort !== undefined) cleanData.smtpPort = parseInt(String(cleanData.smtpPort)) || 587;
-      if (cleanData.dailyLimit !== undefined) cleanData.dailyLimit = parseInt(String(cleanData.dailyLimit)) || 100;
+      if (cleanData.dailyLimit !== undefined) {
+        cleanData.dailyLimit = parseInt(String(cleanData.dailyLimit)) || 500;
+        if (cleanData.dailyLimit > 500) cleanData.dailyLimit = 500;
+      }
       await updateSettings.mutateAsync(cleanData);
       toast.success("Settings saved successfully");
     } catch (err: any) {
@@ -78,95 +80,14 @@ export default function ColdEmailSettingsPage() {
 
       <div className="space-y-6">
 
-        {/* --- EMAIL ACCOUNT SECTION --- */}
-        <Card className="border-blue-100 dark:border-blue-900">
+        {/* --- GROQ API KEY (REQUIRED) --- */}
+        <Card className="border-amber-200 dark:border-amber-800">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Mail className="h-5 w-5 text-blue-600" /> Your Email Account
+              <AlertTriangle className="h-5 w-5 text-amber-600" /> Groq API Key (Required)
             </CardTitle>
             <CardDescription>
-              Connect your own email account (Gmail, Outlook, etc.) so emails are sent from your address.
-              Every user must configure this before launching campaigns.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="smtp-host">SMTP Host</Label>
-                <Input
-                  id="smtp-host"
-                  value={formData.smtpHost || ""}
-                  onChange={(e) => handleChange("smtpHost", e.target.value)}
-                  placeholder="smtp.gmail.com"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="smtp-port">SMTP Port</Label>
-                <Input
-                  id="smtp-port"
-                  type="number"
-                  value={formData.smtpPort || 587}
-                  onChange={(e) => handleChange("smtpPort", parseInt(e.target.value))}
-                  placeholder="587"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="smtp-user">Email Address (SMTP User)</Label>
-                <Input
-                  id="smtp-user"
-                  type="email"
-                  value={formData.smtpUser || ""}
-                  onChange={(e) => handleChange("smtpUser", e.target.value)}
-                  placeholder="yourname@gmail.com"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="smtp-password">Password / App Password</Label>
-                <Input
-                  id="smtp-password"
-                  type="password"
-                  value={formData.smtpPassword || ""}
-                  onChange={(e) => handleChange("smtpPassword", e.target.value)}
-                  placeholder="••••••••"
-                />
-              </div>
-              <div className="space-y-2 sm:col-span-2">
-                <Label htmlFor="smtp-from">From Name / Address (optional)</Label>
-                <Input
-                  id="smtp-from"
-                  value={formData.smtpFrom || ""}
-                  onChange={(e) => handleChange("smtpFrom", e.target.value)}
-                  placeholder="Your Name <yourname@gmail.com>"
-                />
-              </div>
-            </div>
-
-            {/* Gmail guide */}
-            <div className="mt-2 rounded-md bg-blue-50 dark:bg-blue-950 border border-blue-100 dark:border-blue-900 p-4 text-sm space-y-2">
-              <p className="font-semibold text-blue-800 dark:text-blue-300">📧 Using Gmail?</p>
-              <ol className="list-decimal list-inside space-y-1 text-blue-700 dark:text-blue-400">
-                <li>Enable 2-Step Verification in your Google Account.</li>
-                <li>Go to <strong>Google Account → Security → App Passwords</strong>.</li>
-                <li>Generate an App Password for "Mail" and paste it above (not your regular password).</li>
-                <li>Set Host: <code className="bg-blue-100 dark:bg-blue-900 px-1 rounded">smtp.gmail.com</code>, Port: <code className="bg-blue-100 dark:bg-blue-900 px-1 rounded">587</code></li>
-              </ol>
-              <a
-                href="https://myaccount.google.com/apppasswords"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-blue-600 hover:underline font-semibold mt-1"
-              >
-                Open Google App Passwords <ExternalLink className="h-3 w-3" />
-              </a>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Groq API Settings</CardTitle>
-            <CardDescription>
-              We use Groq's high-speed model to generate personalized cold emails. You must set your own API key to use the app.
+              You must set your own Groq API key to use the app. Without this, emails cannot be generated.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -180,7 +101,7 @@ export default function ColdEmailSettingsPage() {
                 placeholder="e.g. gsk_AbCdEf..."
               />
               <p className="text-xs text-slate-500 mt-1">
-                Don't have an API Key? Go to the{" "}
+                Don&apos;t have an API Key? Go to the{" "}
                 <a
                   href="https://console.groq.com"
                   target="_blank"
@@ -190,6 +111,33 @@ export default function ColdEmailSettingsPage() {
                   Groq Console
                 </a>{" "}
                 to create a free key and paste it here.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* --- FROM EMAIL SECTION --- */}
+        <Card className="border-blue-100 dark:border-blue-900">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Mail className="h-5 w-5 text-blue-600" /> From Email Address
+            </CardTitle>
+            <CardDescription>
+              Set the email address that will appear as the sender. Emails will be sent from this address.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="smtp-from">From Email Address</Label>
+              <Input
+                id="smtp-from"
+                type="email"
+                value={formData.smtpFrom || ""}
+                onChange={(e) => handleChange("smtpFrom", e.target.value)}
+                placeholder="yourname@gmail.com"
+              />
+              <p className="text-xs text-slate-500 mt-1">
+                This is the email address that recipients will see as the sender.
               </p>
             </div>
           </CardContent>
@@ -284,7 +232,7 @@ export default function ColdEmailSettingsPage() {
         <Card>
           <CardHeader>
             <CardTitle>Schedule & Limits</CardTitle>
-            <CardDescription>When should emails be sent? Timezone is auto-set from World Clock.</CardDescription>
+            <CardDescription>When should emails be sent? Timezone is auto-set from World Clock. Max 500 emails/day.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
@@ -305,8 +253,8 @@ export default function ColdEmailSettingsPage() {
             </div>
             <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
-                <Label>Daily Limit (Emails)</Label>
-                <Input type="number" value={formData.dailyLimit || 100} onChange={(e) => handleChange("dailyLimit", parseInt(e.target.value))} />
+                <Label>Daily Limit (Max 500)</Label>
+                <Input type="number" min="1" max="500" value={formData.dailyLimit || 500} onChange={(e) => handleChange("dailyLimit", parseInt(e.target.value) || 500)} />
               </div>
               <div className="space-y-2">
                 <Label>Start Time</Label>

@@ -98,12 +98,12 @@ export default function DashboardOverviewPage() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center justify-between">
-              Failures <AlertCircle className="h-4 w-4 text-red-500/70" />
+              Bounced <AlertCircle className="h-4 w-4 text-red-500/70" />
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold text-red-600">{metrics.failed + metrics.bounced}</p>
-            <p className="text-xs text-red-600/70 mt-1">{metrics.bounced} bounces</p>
+            <p className="text-3xl font-bold text-red-600">{metrics.bounced}</p>
+            <p className="text-xs text-red-600/70 mt-1">{metrics.failed} failed</p>
           </CardContent>
         </Card>
       </div>
@@ -172,6 +172,7 @@ export default function DashboardOverviewPage() {
                       lead.status === 'sent' ? 'border-blue-200 text-blue-700 bg-blue-50' :
                       lead.status === 'replied' ? 'border-emerald-200 text-emerald-700 bg-emerald-50' :
                       lead.status === 'failed' ? 'border-red-200 text-red-700 bg-red-50' :
+                      lead.status === 'bounced' ? 'border-rose-200 text-rose-700 bg-rose-50' :
                       'bg-slate-50 text-slate-600'
                     }>
                       {lead.status}

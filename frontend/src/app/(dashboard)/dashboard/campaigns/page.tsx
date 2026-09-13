@@ -1,14 +1,27 @@
 "use client";
 
-import { Plus, Rocket } from "lucide-react";
+import { useState } from "react";
+import { Plus, Rocket, Trash2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { EmptyState } from "@/components/dashboard/empty-state";
-import { useCampaigns } from "@/hooks/use-campaigns";
+import { useCampaigns, useDeleteAllCampaigns } from "@/hooks/use-campaigns";
+import { toast } from "sonner";
 
 export default function CampaignsPage() {
-  const { data, isLoading } = useCampaigns({ page: 1, pageSize: 20 });
+  const { data, isLoading } = useCampaigns({ page: 1, pageSize: 100 });
+  const { mutateAsync: deleteAllCampaigns, isPending: isDeletingAll } = useDeleteAllCampaigns();
+
+  const handleDeleteAll = async () => {
+    if (!confirm("Are you sure you want to delete ALL campaigns? This action cannot be undone.")) return;
+    try {
+      await deleteAllCampaigns();
+      toast.success("All campaigns deleted successfully");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to delete campaigns");
+    }
+  };
 
   return (
     <>
@@ -16,10 +29,24 @@ export default function CampaignsPage() {
         title="Campaigns"
         description="Create and manage your outreach sequences."
         actions={
-          <Button>
-            <Plus className="size-4" />
-            New campaign
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="destructive"
+              onClick={handleDeleteAll}
+              disabled={isDeletingAll || !data?.data.length}
+            >
+              {isDeletingAll ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Trash2 className="h-4 w-4 mr-2" />
+              )}
+              Delete All
+            </Button>
+            <Button>
+              <Plus className="size-4" />
+              New campaign
+            </Button>
+          </div>
         }
       />
       <Card>

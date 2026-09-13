@@ -10,6 +10,7 @@ export interface SendEmailInput {
   subject: string;
   html?: string;
   text?: string;
+  from?: string;
   // Optional per-user SMTP override; if omitted, falls back to global env SMTP
   userSmtp?: {
     host: string;
@@ -107,7 +108,7 @@ export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult>
   }
 
   const transport = getTransporter(input.userSmtp);
-  const fromAddress = input.userSmtp?.from ?? env.email.from;
+  const fromAddress = input.from ?? input.userSmtp?.from ?? env.email.from;
 
   try {
     const info = await transport.sendMail({

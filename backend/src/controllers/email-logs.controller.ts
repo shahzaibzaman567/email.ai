@@ -8,13 +8,21 @@ export async function getEmailLogs(req: Request, res: Response): Promise<void> {
   const userId = req.auth!.userId;
   const page = parseInt(req.query.page as string) || 1;
   const pageSize = parseInt(req.query.pageSize as string) || 20;
+  const status = req.query.status as string;
 
-  const total = await EmailLogModel.countDocuments({ userId, status: "sent" });
+  const filter: Record<string, unknown> = { userId };
+  if (status && ["sent", "bounced", "failed", "queued", "sending"].includes(status)) {
+    filter.status = status;
+  } else {
+    filter.status = { $in: ["sent", "bounced", "failed"] };
+  }
+
+  const total = await EmailLogModel.countDocuments(filter);
   
-  const logs = await EmailLogModel.find({ userId, status: "sent" })
+  const logs = await EmailLogModel.find(filter)
     .populate("leadId", "firstName lastName businessName email")
     .populate("campaignId", "name")
-    .sort({ sentAt: -1 })
+    .sort({ createdAt: -1 })
     .skip((page - 1) * pageSize)
     .limit(pageSize)
     .lean();
@@ -87,4 +95,3 @@ export async function bulkDeleteEmailLogs(req: Request, res: Response): Promise<
     }),
   );
 }
-
