@@ -5,11 +5,13 @@ import {
   getEmailLogDetail,
   deleteEmailLog,
   bulkDeleteEmailLogs,
+  deleteAllEmailLogs,
 } from "../../controllers/email-logs.controller.js";
 
 const router = Router();
 
 router.get("/", asyncHandler(getEmailLogs));
+router.delete("/all", asyncHandler(deleteAllEmailLogs));
 router.delete("/", asyncHandler(bulkDeleteEmailLogs));
 router.post("/bulk-delete", asyncHandler(bulkDeleteEmailLogs));
 router.get("/:id", asyncHandler(getEmailLogDetail));

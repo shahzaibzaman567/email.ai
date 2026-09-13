@@ -70,3 +70,22 @@ export function useBulkDeleteEmailLogs() {
   });
 }
 
+export function useDeleteAllEmailLogs() {
+  const { getToken } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async () => {
+      const token = await getToken();
+      return apiRequest<any>(`/api/v1/email-logs/all`, {
+        method: "DELETE",
+        token: token ?? undefined,
+      });
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["email-logs"] });
+      void queryClient.invalidateQueries({ queryKey: ["analytics"] });
+    },
+  });
+}
+

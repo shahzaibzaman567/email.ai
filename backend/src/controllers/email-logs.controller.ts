@@ -95,3 +95,9 @@ export async function bulkDeleteEmailLogs(req: Request, res: Response): Promise<
     }),
   );
 }
+
+export async function deleteAllEmailLogs(req: Request, res: Response): Promise<void> {
+  const userId = req.auth!.userId;
+  const result = await EmailLogModel.deleteMany({ userId });
+  res.json(ok("All email logs deleted successfully", { deletedCount: result.deletedCount }));
+}
