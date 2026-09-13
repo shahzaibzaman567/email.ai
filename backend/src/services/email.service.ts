@@ -53,6 +53,9 @@ function getTransporter(userSmtp?: SendEmailInput["userSmtp"]): Transporter {
       port: userSmtp.port,
       secure: userSmtp.port === 465,
       auth: { user: userSmtp.user, pass: userSmtp.password },
+      connectionTimeout: 10_000,
+      greetingTimeout: 10_000,
+      socketTimeout: 15_000,
     });
   }
   // Fall back to global env SMTP
@@ -67,6 +70,9 @@ function getTransporter(userSmtp?: SendEmailInput["userSmtp"]): Transporter {
       auth: { user: env.email.user, pass: env.email.password },
       pool: true,
       maxConnections: 1,
+      connectionTimeout: 10_000,
+      greetingTimeout: 10_000,
+      socketTimeout: 15_000,
     });
   }
   return sharedTransporter;
