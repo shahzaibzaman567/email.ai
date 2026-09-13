@@ -117,12 +117,22 @@ export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult>
   const fromAddress = input.from ?? input.userSmtp?.from ?? env.email.from;
 
   try {
+    const replyTo = input.userSmtp?.from ?? fromAddress;
     const info = await transport.sendMail({
       ...(fromAddress ? { from: fromAddress } : {}),
+      ...(replyTo ? { replyTo } : {}),
       to: input.to,
       subject: input.subject,
       html: input.html,
       text: input.text,
+      headers: {
+        // Anti-spam / deliverability headers
+        "Precedence": "bulk",
+        "X-Priority": "3",
+        "X-Mailer": "Email-AI-Platform",
+        "List-Unsubscribe": `<mailto:${replyTo ?? fromAddress}?subject=unsubscribe>`,
+        "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+      },
     });
 
     logger.info("Email sent via SMTP", {

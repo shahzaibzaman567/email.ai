@@ -80,89 +80,119 @@ export async function detectRepliesForUser(
       }
     }
 
-    const lock = await client.getMailboxLock("INBOX");
-    try {
-      const searchResults = await client.search(
-        { since: new Date(sinceDate), from: email },
-        { uid: true }
-      );
+    // Helper: process one email source for reply matching
+    const processEmailSource = async (source: string): Promise<string | null> => {
+      const inReplyToMatch = source.match(/In-Reply-To:\s*<([^>]+)>/i);
+      const referencesMatch = source.match(/References:\s*(.+)/i);
 
-      if (!searchResults || searchResults.length === 0) {
-        return result;
+      let matchedLeadId: string | null = null;
+
+      if (inReplyToMatch) {
+        const inReplyTo = inReplyToMatch[1].toLowerCase();
+        matchedLeadId = messageIdMap.get(inReplyTo) || null;
       }
 
-      const uids = Array.isArray(searchResults) ? searchResults : [];
-      
-      for (const uid of uids) {
-        try {
-          const msg = await client.fetchOne(uid, { source: true, uid: true }, { uid: true });
-          if (!msg || !("source" in msg) || !msg.source) continue;
-
-          const source = typeof msg.source === "string" ? msg.source : msg.source.toString();
-          
-          const inReplyToMatch = source.match(/In-Reply-To:\s*<([^>]+)>/i);
-          const referencesMatch = source.match(/References:\s*(.+)/i);
-          
-          let matchedLeadId: string | null = null;
-
-          if (inReplyToMatch) {
-            const inReplyTo = inReplyToMatch[1].toLowerCase();
-            matchedLeadId = messageIdMap.get(inReplyTo) || null;
+      if (!matchedLeadId && referencesMatch) {
+        const refs = referencesMatch[1].toLowerCase();
+        for (const [msgId, leadId] of messageIdMap.entries()) {
+          if (refs.includes(msgId)) {
+            matchedLeadId = leadId;
+            break;
           }
-
-          if (!matchedLeadId && referencesMatch) {
-            const refs = referencesMatch[1].toLowerCase();
-            for (const [msgId, leadId] of messageIdMap.entries()) {
-              if (refs.includes(msgId)) {
-                matchedLeadId = leadId;
-                break;
-              }
-            }
-          }
-
-          if (!matchedLeadId) {
-            const fromMatch = source.match(/From:\s*(.+)/i);
-            if (fromMatch) {
-              const fromEmail = fromMatch[1].match(/<([^>]+)>/)?.[1] || fromMatch[1].trim();
-              const lead = await LeadModel.findOne({
-                userId,
-                email: fromEmail.toLowerCase(),
-                status: { $nin: ["replied", "unsubscribed"] },
-              }).select("_id").lean();
-              
-              if (lead) {
-                matchedLeadId = lead._id.toString();
-              }
-            }
-          }
-
-          if (matchedLeadId) {
-            const lead = await LeadModel.findOne({
-              _id: matchedLeadId,
-              userId,
-              status: { $nin: ["replied", "unsubscribed"] },
-            }).lean();
-
-            if (lead) {
-              await LeadModel.updateOne(
-                { _id: matchedLeadId },
-                { $set: { status: "replied" } }
-              );
-              result.repliesFound++;
-              result.leadsUpdated.push(matchedLeadId);
-              logger.info("Reply detected and lead updated", {
-                userId,
-                leadId: matchedLeadId,
-                email: lead.email,
-              });
-            }
-          }
-        } catch (err) {
-          logger.warn("Error processing email for reply detection", { uid, error: String(err) });
         }
       }
-    } finally {
-      lock.release();
+
+      if (!matchedLeadId) {
+        const fromMatch = source.match(/From:\s*(.+)/i);
+        if (fromMatch) {
+          const fromEmail = fromMatch[1].match(/<([^>]+)>/)?.[1] || fromMatch[1].trim();
+          const lead = await LeadModel.findOne({
+            userId,
+            email: fromEmail.toLowerCase(),
+            status: { $nin: ["replied", "unsubscribed"] },
+          }).select("_id").lean();
+
+          if (lead) {
+            matchedLeadId = lead._id.toString();
+          }
+        }
+      }
+
+      return matchedLeadId;
+    };
+
+    // Helper: scan one mailbox folder for replies
+    const scanFolder = async (folderName: string): Promise<void> => {
+      const safeClient = client!;
+      let lock;
+      try {
+        lock = await safeClient.getMailboxLock(folderName);
+      } catch {
+        // Folder does not exist on this account, skip silently
+        return;
+      }
+      try {
+        const searchResults = await safeClient.search(
+          { since: new Date(sinceDate) },
+          { uid: true }
+        );
+
+        if (!searchResults || searchResults.length === 0) return;
+
+        const uids = Array.isArray(searchResults) ? searchResults : [];
+
+        for (const uid of uids) {
+          try {
+            const msg = await safeClient.fetchOne(uid, { source: true, uid: true }, { uid: true });
+            if (!msg || !("source" in msg) || !msg.source) continue;
+
+            const source = typeof msg.source === "string" ? msg.source : msg.source.toString();
+
+            const matchedLeadId = await processEmailSource(source);
+
+            if (matchedLeadId) {
+              const lead = await LeadModel.findOne({
+                _id: matchedLeadId,
+                userId,
+                status: { $nin: ["replied", "unsubscribed"] },
+              }).lean();
+
+              if (lead) {
+                await LeadModel.updateOne(
+                  { _id: matchedLeadId },
+                  { $set: { status: "replied" } }
+                );
+                result.repliesFound++;
+                result.leadsUpdated.push(matchedLeadId);
+                logger.info("Reply detected and lead updated", {
+                  userId,
+                  leadId: matchedLeadId,
+                  email: lead.email,
+                  folder: folderName,
+                });
+              }
+            }
+          } catch (err) {
+            logger.warn("Error processing email for reply detection", { uid, folder: folderName, error: String(err) });
+          }
+        }
+      } finally {
+        lock.release();
+      }
+    };
+
+    // Scan all common folders where replies could land (including Spam/Junk)
+    const foldersToScan = [
+      "INBOX",
+      "[Gmail]/Spam",
+      "[Gmail]/All Mail",
+      "Junk",
+      "Junk Email",
+      "Spam",
+    ];
+
+    for (const folder of foldersToScan) {
+      await scanFolder(folder);
     }
 
     await client.logout();
