@@ -99,8 +99,9 @@ export const sendCampaignEmail = inngest.createFunction(
         campaignSettingsOverrides: campaign.settings || {},
         userSettings: settings,
         instructionsText,
-        // From email only (uses platform SMTP)
+        // From email only (uses platform SMTP unless imapPassword is provided)
         smtpFrom: settings.smtpFrom || undefined,
+        imapPassword: settings.imapPassword ? decrypt(settings.imapPassword) : undefined,
         groqApiKey: settings.groqApiKey ? decrypt(settings.groqApiKey) : undefined,
       };
     });
@@ -204,11 +205,20 @@ export const sendCampaignEmail = inngest.createFunction(
         }
 
         try {
+          const userSmtp = (context.smtpFrom && context.imapPassword) ? {
+            host: "smtp.gmail.com",
+            port: 465,
+            user: context.smtpFrom,
+            password: context.imapPassword,
+            from: context.smtpFrom,
+          } : undefined;
+
           const result = await sendEmailThrottled({
             to: context.recipient,
             subject: email.subject,
             text: email.body,
             from: context.smtpFrom,
+            userSmtp,
           });
           return { outcome: "sent" as const, result };
         } catch (sendErr) {
