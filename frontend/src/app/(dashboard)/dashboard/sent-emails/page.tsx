@@ -29,6 +29,7 @@ import {
   useEmailLogDetail,
   useDeleteEmailLog,
   useBulkDeleteEmailLogs,
+  useDeleteAllEmailLogs,
 } from "@/hooks/use-email-logs";
 import {
   Loader2,
@@ -46,6 +47,7 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { useUpdateLeadStatus } from "@/hooks/use-leads";
 
 function exportToCsv(filename: string, rows: any[]) {
   if (!rows || rows.length === 0) return;
@@ -127,6 +129,29 @@ export default function SentEmailsPage() {
     useDeleteEmailLog();
   const { mutateAsync: bulkDeleteEmailLogs, isPending: isDeletingBulk } =
     useBulkDeleteEmailLogs();
+  const { mutateAsync: deleteAllEmailLogs, isPending: isDeletingAll } =
+    useDeleteAllEmailLogs();
+  const { mutateAsync: updateLeadStatus } = useUpdateLeadStatus();
+
+  const handleMarkAsReplied = async (leadId: string, email: string) => {
+    if (!confirm(`Mark ${email} as replied?`)) return;
+    try {
+      await updateLeadStatus({ id: leadId, status: "replied" });
+      toast.success(`${email} marked as replied`);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to mark as replied");
+    }
+  };
+
+  const handleDeleteAll = async () => {
+    if (!confirm("Are you sure you want to delete ALL sent email logs? This action cannot be undone.")) return;
+    try {
+      await deleteAllEmailLogs();
+      toast.success("All sent emails deleted successfully");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to delete emails");
+    }
+  };
 
   const totalPages = meta ? Math.ceil(meta.total / meta.pageSize) : 1;
 
@@ -243,6 +268,19 @@ export default function SentEmailsPage() {
         </div>
 
         <div className="flex items-center gap-2">
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={handleDeleteAll}
+            disabled={isDeletingAll || logs.length === 0}
+          >
+            {isDeletingAll ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Trash2 className="h-4 w-4 mr-2" />
+            )}
+            Delete All
+          </Button>
           <Button
             variant="outline"
             size="sm"
@@ -404,6 +442,17 @@ export default function SentEmailsPage() {
                           >
                             <Eye className="h-4 w-4 mr-1 text-slate-500" /> View
                           </Button>
+                          {log.leadId?._id && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleMarkAsReplied(log.leadId._id, log.recipient)}
+                              title="Mark lead as replied"
+                              className="text-emerald-500 hover:text-emerald-700 hover:bg-emerald-50"
+                            >
+                              <Reply className="h-4 w-4" />
+                            </Button>
+                          )}
                           <Button
                             variant="ghost"
                             size="sm"
