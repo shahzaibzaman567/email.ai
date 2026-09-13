@@ -140,6 +140,35 @@ export default function ColdEmailSettingsPage() {
                 This is the email address that recipients will see as the sender.
               </p>
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="imap-password">IMAP App Password (for Reply Detection)</Label>
+              <Input
+                id="imap-password"
+                type="password"
+                value={formData.imapPassword || ""}
+                onChange={(e) => handleChange("imapPassword", e.target.value)}
+                placeholder="Gmail App Password for reply tracking"
+              />
+              <p className="text-xs text-slate-500 mt-1">
+                Optional. If set, the system will automatically detect replies from your inbox and mark leads as &quot;replied&quot;.
+              </p>
+              <div className="rounded-md bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 p-3 text-xs space-y-1">
+                <p className="font-semibold text-amber-800 dark:text-amber-300">How to get Gmail App Password:</p>
+                <ol className="list-decimal list-inside space-y-0.5 text-amber-700 dark:text-amber-400">
+                  <li>Enable 2-Step Verification in your Google Account.</li>
+                  <li>Go to <strong>Google Account &rarr; Security &rarr; App Passwords</strong>.</li>
+                  <li>Generate an App Password for &quot;Mail&quot; and paste it above.</li>
+                </ol>
+                <a
+                  href="https://myaccount.google.com/apppasswords"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-amber-600 hover:underline font-semibold mt-1"
+                >
+                  Open Google App Passwords <ExternalLink className="h-3 w-3" />
+                </a>
+              </div>
+            </div>
           </CardContent>
         </Card>
 

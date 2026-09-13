@@ -24,6 +24,9 @@ export interface IColdEmailSettings {
   // Per-user From Email
   smtpFrom?: string;
   
+  // IMAP App Password (for reply detection)
+  imapPassword?: string;
+  
   // Daily Schedule
   dailyLimit?: number;
   scheduleStartTime?: string;
@@ -58,6 +61,9 @@ const coldEmailSettingsSchema = new Schema<IColdEmailSettings>(
 
     // From Email only
     smtpFrom: { type: String, trim: true },
+
+    // IMAP App Password (for reply detection)
+    imapPassword: { type: String },
 
     dailyLimit: { type: Number, default: 500 },
     scheduleStartTime: { type: String, default: "09:00" },

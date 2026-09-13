@@ -46,7 +46,7 @@ export async function updateColdEmailSettings(req: Request, res: Response): Prom
     "targetCountries", "emailGoal", "customEmailGoal", "emailLength",
     "tone", "customTone", "cta", "customCta", "personalizationLevel",
     "emailSignature", "subjectMode", "sameSubject", "customSubjectInstruction",
-    "groqApiKey", "smtpFrom",
+    "groqApiKey", "smtpFrom", "imapPassword",
     "dailyLimit", "scheduleStartTime", "scheduleEndTime",
     "scheduleTimezone"
   ];
@@ -56,6 +56,9 @@ export async function updateColdEmailSettings(req: Request, res: Response): Prom
       const value = req.body[field];
       
       if (field === "groqApiKey" && typeof value === "string" && value.includes("...")) {
+        continue;
+      }
+      if (field === "imapPassword" && value === "••••••••") {
         continue;
       }
 
@@ -70,6 +73,9 @@ export async function updateColdEmailSettings(req: Request, res: Response): Prom
   if (updates.groqApiKey) {
     updates.groqApiKey = encrypt(updates.groqApiKey);
   }
+  if (updates.imapPassword) {
+    updates.imapPassword = encrypt(updates.imapPassword);
+  }
 
   const settings = await ColdEmailSettingsModel.findOneAndUpdate(
     { userId },
@@ -79,6 +85,9 @@ export async function updateColdEmailSettings(req: Request, res: Response): Prom
 
   if (settings?.groqApiKey) {
     (settings as any).groqApiKey = maskApiKey(settings.groqApiKey);
+  }
+  if (settings?.imapPassword) {
+    (settings as any).imapPassword = "••••••••";
   }
 
   res.json(ok("Settings updated successfully", settings));
