@@ -125,14 +125,8 @@ export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult>
       subject: input.subject,
       html: input.html,
       text: input.text,
-      headers: {
-        // Anti-spam / deliverability headers
-        "Precedence": "bulk",
-        "X-Priority": "3",
-        "X-Mailer": "Email-AI-Platform",
-        "List-Unsubscribe": `<mailto:${replyTo ?? fromAddress}?subject=unsubscribe>`,
-        "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
-      },
+      // Completely hide that this is an automated system
+      xMailer: false,
     });
 
     logger.info("Email sent via SMTP", {
