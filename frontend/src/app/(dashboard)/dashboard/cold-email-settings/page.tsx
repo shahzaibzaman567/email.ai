@@ -172,11 +172,82 @@ export default function ColdEmailSettingsPage() {
           </CardContent>
         </Card>
 
+        {/* --- GOOGLE APPS SCRIPT (BEST FREE METHOD) --- */}
+        <Card className="border-blue-200 dark:border-blue-800 ring-2 ring-blue-400 ring-offset-2">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Mail className="h-5 w-5 text-blue-600" />
+              ⭐ Google Apps Script Relay (Best Free Method — Inbox Guaranteed)
+            </CardTitle>
+            <CardDescription>
+              Sends emails directly from Google&apos;s servers using your Gmail. <strong>100% free, no spam, no credit card.</strong> Max 100 emails/day. 5-minute interval between sends.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="rounded-md bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 p-3 text-xs space-y-2">
+              <p className="font-semibold text-blue-800 dark:text-blue-300">📋 Setup Instructions (5 minutes):</p>
+              <ol className="list-decimal list-inside space-y-1 text-blue-700 dark:text-blue-400">
+                <li>Go to <a href="https://script.google.com" target="_blank" rel="noopener noreferrer" className="underline font-semibold">script.google.com</a> and click <strong>&quot;New Project&quot;</strong>.</li>
+                <li>Delete existing code and paste the script below.</li>
+                <li>Click <strong>Deploy → New Deployment → Web App</strong>.</li>
+                <li>Set <strong>&quot;Execute as: Me&quot;</strong> and <strong>&quot;Who has access: Anyone&quot;</strong>.</li>
+                <li>Click <strong>Deploy</strong>, authorize permissions, and copy the Web App URL.</li>
+                <li>Paste that URL in the &quot;GAS Webhook URL&quot; field below and save.</li>
+              </ol>
+            </div>
+            <div className="rounded-md bg-slate-950 border border-slate-700 p-3 text-xs font-mono text-green-400 overflow-x-auto whitespace-pre">
+{`function doPost(e) {
+  try {
+    var data = JSON.parse(e.postData.contents);
+    var options = { htmlBody: data.htmlBody || data.body };
+    if (data.fromName) options.name = data.fromName;
+    GmailApp.sendEmail(data.to, data.subject, data.body, options);
+    return ContentService
+      .createTextOutput(JSON.stringify({success:true}))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch(err) {
+    return ContentService
+      .createTextOutput(JSON.stringify({success:false,error:err.message}))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+function doGet(e) {
+  return ContentService
+    .createTextOutput(JSON.stringify({status:"Running!"}))
+    .setMimeType(ContentService.MimeType.JSON);
+}`}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="gas-webhook-url">GAS Webhook URL</Label>
+              <Input
+                id="gas-webhook-url"
+                type="url"
+                value={formData.gasWebhookUrl || ""}
+                onChange={(e) => handleChange("gasWebhookUrl", e.target.value)}
+                placeholder="https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec"
+              />
+              <p className="text-xs text-slate-500">
+                Paste the Web App URL from your Google Apps Script deployment here.
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="gas-from-name">Sender Name (optional)</Label>
+              <Input
+                id="gas-from-name"
+                type="text"
+                value={formData.gasFromName || ""}
+                onChange={(e) => handleChange("gasFromName", e.target.value)}
+                placeholder="Your Name or Company"
+              />
+            </div>
+          </CardContent>
+        </Card>
+
         {/* --- CUSTOM SMTP PROVIDER (Brevo etc.) --- */}
         <Card className="border-green-100 dark:border-green-900">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Mail className="h-5 w-5 text-green-600" /> Custom SMTP Provider (Recommended for Inbox Delivery)
+              <Mail className="h-5 w-5 text-green-600" /> Custom SMTP Provider (Alternative)
             </CardTitle>
             <CardDescription>
               Use a free SMTP provider like <strong>Brevo</strong> to send emails that land in Inbox, not Spam. 300 emails/day free — no credit card needed.

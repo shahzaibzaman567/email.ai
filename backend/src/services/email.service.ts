@@ -11,7 +11,12 @@ export interface SendEmailInput {
   html?: string;
   text?: string;
   from?: string;
-  // Optional per-user SMTP override; if omitted, falls back to global env SMTP
+  // Option 1 (highest priority): Google Apps Script webhook
+  gasWebhook?: {
+    url: string;
+    fromName?: string;
+  };
+  // Option 2: Per-user SMTP override (Brevo, etc.)
   userSmtp?: {
     host: string;
     port: number;
@@ -46,7 +51,6 @@ export class ProviderRateLimitError extends Error {
 let sharedTransporter: Transporter | null = null;
 
 function getTransporter(userSmtp?: SendEmailInput["userSmtp"]): Transporter {
-  // If the caller provides per-user SMTP creds, create a one-off transporter
   if (userSmtp) {
     return nodemailer.createTransport({
       host: userSmtp.host,
@@ -58,7 +62,6 @@ function getTransporter(userSmtp?: SendEmailInput["userSmtp"]): Transporter {
       socketTimeout: 15_000,
     });
   }
-  // Fall back to global env SMTP
   if (!env.email.host || !env.email.user || !env.email.password) {
     throw new EmailNotConfiguredError();
   }
@@ -78,6 +81,48 @@ function getTransporter(userSmtp?: SendEmailInput["userSmtp"]): Transporter {
   return sharedTransporter;
 }
 
+/**
+ * Send email via Google Apps Script doPost webhook.
+ * The GAS script runs under the user's Google account so Gmail delivers it
+ * from Google's own servers — guaranteed inbox delivery.
+ */
+async function sendViaGas(input: SendEmailInput): Promise<SendEmailResult> {
+  const { url, fromName } = input.gasWebhook!;
+
+  const payload = {
+    to: input.to,
+    subject: input.subject,
+    body: input.text ?? "",
+    htmlBody: input.html ?? "",
+    fromName: fromName ?? "",
+  };
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+    signal: AbortSignal.timeout(20_000),
+  });
+
+  if (!response.ok) {
+    throw new Error(`GAS webhook returned HTTP ${response.status}`);
+  }
+
+  const json = (await response.json()) as { success?: boolean; error?: string; messageId?: string };
+
+  if (!json.success) {
+    throw new Error(`GAS email failed: ${json.error ?? "unknown error"}`);
+  }
+
+  logger.info("Email sent via Google Apps Script", { to: input.to });
+
+  return {
+    providerMessageId: json.messageId ?? `gas-${randomUUID()}`,
+    provider: "google-apps-script",
+    testMode: false,
+  };
+}
+
 export function isRateLimitError(err: unknown): boolean {
   if (err instanceof ProviderRateLimitError) return true;
   if (!(err instanceof Error)) return false;
@@ -95,16 +140,21 @@ export function isRateLimitError(err: unknown): boolean {
 }
 
 /**
- * Sends one email. Honors EMAIL_TEST_MODE: when enabled, the email is logged
- * but never actually transmitted. In test mode no SMTP credentials are needed.
+ * Sends one email. Priority order:
+ * 1. Google Apps Script webhook (best deliverability, uses user's own Gmail)
+ * 2. Custom SMTP (Brevo, etc.)
+ * 3. Global platform SMTP (fallback)
  */
 export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult> {
+  // Priority 1: GAS webhook
+  if (input.gasWebhook?.url) {
+    return sendViaGas(input);
+  }
+
   if (env.emailTestMode && !input.userSmtp) {
-    logger.info("EMAIL_TEST_MODE: email would be sent (no user SMTP configured)", {
+    logger.info("EMAIL_TEST_MODE: email would be sent", {
       to: input.to,
       subject: input.subject,
-      html: input.html,
-      text: input.text,
     });
     return {
       providerMessageId: `test-${randomUUID()}`,
@@ -113,6 +163,7 @@ export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult>
     };
   }
 
+  // Priority 2: Custom SMTP or fallback
   const transport = getTransporter(input.userSmtp);
   const fromAddress = input.from ?? input.userSmtp?.from ?? env.email.from;
 
@@ -125,7 +176,6 @@ export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult>
       subject: input.subject,
       html: input.html,
       text: input.text,
-      // Completely hide that this is an automated system
       xMailer: false,
     });
 

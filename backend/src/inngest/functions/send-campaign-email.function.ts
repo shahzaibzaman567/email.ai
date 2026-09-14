@@ -101,7 +101,10 @@ export const sendCampaignEmail = inngest.createFunction(
         instructionsText,
         // From email address
         smtpFrom: settings.smtpFrom || undefined,
-        // Custom SMTP provider (e.g. Brevo) — decrypt if present
+        // GAS relay (highest priority — guaranteed inbox)
+        gasWebhookUrl: settings.gasWebhookUrl || undefined,
+        gasFromName: settings.gasFromName || undefined,
+        // Custom SMTP provider (Brevo etc.)
         smtpHost: settings.smtpHost || undefined,
         smtpUser: settings.smtpUser || undefined,
         smtpPass: settings.smtpPass ? decrypt(settings.smtpPass) : undefined,
@@ -211,12 +214,19 @@ export const sendCampaignEmail = inngest.createFunction(
         }
 
         try {
-          // Prefer custom SMTP provider (e.g. Brevo) for better deliverability
-          // Fall back to Gmail SMTP with App Password if no custom provider
+          // Priority 1: GAS (Google Apps Script) — guaranteed inbox delivery
+          // Priority 2: Custom SMTP (Brevo, etc.) — good deliverability
+          // Priority 3: Gmail App Password — fallback
+
+          let gasWebhook: Parameters<typeof sendEmailThrottled>[0]["gasWebhook"];
           let userSmtp: Parameters<typeof sendEmailThrottled>[0]["userSmtp"];
 
-          if (context.smtpHost && context.smtpUser && context.smtpPass) {
-            // Custom SMTP provider (Brevo, Mailjet, etc.)
+          if (context.gasWebhookUrl) {
+            gasWebhook = {
+              url: context.gasWebhookUrl,
+              fromName: context.gasFromName,
+            };
+          } else if (context.smtpHost && context.smtpUser && context.smtpPass) {
             userSmtp = {
               host: context.smtpHost,
               port: context.smtpPort ?? 587,
@@ -225,7 +235,6 @@ export const sendCampaignEmail = inngest.createFunction(
               from: context.smtpFrom,
             };
           } else if (context.smtpFrom && context.imapPassword) {
-            // Gmail SMTP with App Password (fallback)
             userSmtp = {
               host: "smtp.gmail.com",
               port: 465,
@@ -240,6 +249,7 @@ export const sendCampaignEmail = inngest.createFunction(
             subject: email.subject,
             text: email.body,
             from: context.smtpFrom,
+            gasWebhook,
             userSmtp,
           });
           return { outcome: "sent" as const, result };

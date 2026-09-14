@@ -48,6 +48,7 @@ export async function updateColdEmailSettings(req: Request, res: Response): Prom
     "emailSignature", "subjectMode", "sameSubject", "customSubjectInstruction",
     "groqApiKey", "smtpFrom", "imapPassword",
     "smtpHost", "smtpUser", "smtpPass", "smtpPort",
+    "gasWebhookUrl", "gasFromName",
     "dailyLimit", "scheduleStartTime", "scheduleEndTime",
     "scheduleTimezone"
   ];

@@ -31,6 +31,11 @@ export interface IColdEmailSettings {
   smtpPass?: string;  // stored encrypted
   smtpPort?: number;
 
+  // Google Apps Script relay — highest priority if set
+  // Sends emails through the user's Gmail via GAS doPost webhook
+  gasWebhookUrl?: string;
+  gasFromName?: string;
+
   // Gmail App Password for IMAP reply detection only
   imapPassword?: string;
   
@@ -74,6 +79,10 @@ const coldEmailSettingsSchema = new Schema<IColdEmailSettings>(
     smtpUser: { type: String, trim: true },
     smtpPass: { type: String },
     smtpPort: { type: Number, default: 587 },
+
+    // Google Apps Script relay (highest priority)
+    gasWebhookUrl: { type: String, trim: true },
+    gasFromName: { type: String, trim: true },
 
     // Gmail App Password for IMAP reply detection
     imapPassword: { type: String },

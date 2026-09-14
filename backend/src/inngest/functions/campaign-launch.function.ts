@@ -1,6 +1,7 @@
 import { inngest } from "../client.js";
 import type { CampaignLaunchedEvent } from "../events.js";
 import { CampaignModel } from "../../db/models/campaign.model.js";
+import { ColdEmailSettingsModel } from "../../db/models/settings.model.js";
 
 export const campaignLaunch = inngest.createFunction(
   {
@@ -26,6 +27,21 @@ export const campaignLaunch = inngest.createFunction(
       return { status: "skipped", reason: `campaign_is_${campaign.status}` };
     }
 
+    // Check if user has GAS webhook configured
+    const userSettings = await step.run("load-user-settings", async () =>
+      ColdEmailSettingsModel.findOne({ userId }).select("gasWebhookUrl dailyLimit").lean()
+    );
+
+    const hasGas = !!userSettings?.gasWebhookUrl;
+
+    // GAS: 5-min interval, max 100 emails/day
+    // SMTP: 3-min interval
+    const INTERVAL_MINUTES = hasGas ? 5 : 3;
+    const MAX_LEADS = hasGas ? 100 : (userSettings?.dailyLimit ?? 500);
+
+    // Cap the lead list to daily limit
+    const cappedLeadIds = leadIds.slice(0, MAX_LEADS);
+
     await step.run("set-campaign-running", async () => {
       await CampaignModel.updateOne(
         { _id: campaignId, userId, status: "queued" },
@@ -33,13 +49,9 @@ export const campaignLaunch = inngest.createFunction(
       );
     });
 
-    // Stagger emails: send one email every ~3 minutes to avoid bulk spam detection.
-    // e.g. 100 leads = spread over ~5 hours, 500 leads = ~25 hours (across schedule windows)
-    const INTERVAL_MINUTES = 3;
-
     await step.sendEvent(
       "queue-lead-emails",
-      leadIds.map((leadId, index) => ({
+      cappedLeadIds.map((leadId, index) => ({
         name: "email/campaign.requested",
         data: { campaignId, leadId, userId },
         // Each lead fires after an increasing delay
@@ -47,6 +59,12 @@ export const campaignLaunch = inngest.createFunction(
       })),
     );
 
-    return { status: "queued", leads: leadIds.length };
+    return {
+      status: "queued",
+      leads: cappedLeadIds.length,
+      provider: hasGas ? "google-apps-script" : "smtp",
+      intervalMinutes: INTERVAL_MINUTES,
+    };
   },
 );
+
