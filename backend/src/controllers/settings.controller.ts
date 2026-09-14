@@ -47,6 +47,7 @@ export async function updateColdEmailSettings(req: Request, res: Response): Prom
     "tone", "customTone", "cta", "customCta", "personalizationLevel",
     "emailSignature", "subjectMode", "sameSubject", "customSubjectInstruction",
     "groqApiKey", "smtpFrom", "imapPassword",
+    "smtpHost", "smtpUser", "smtpPass", "smtpPort",
     "dailyLimit", "scheduleStartTime", "scheduleEndTime",
     "scheduleTimezone"
   ];
@@ -59,6 +60,9 @@ export async function updateColdEmailSettings(req: Request, res: Response): Prom
         continue;
       }
       if (field === "imapPassword" && value === "••••••••") {
+        continue;
+      }
+      if (field === "smtpPass" && value === "••••••••") {
         continue;
       }
 
@@ -76,6 +80,9 @@ export async function updateColdEmailSettings(req: Request, res: Response): Prom
   if (updates.imapPassword) {
     updates.imapPassword = encrypt(updates.imapPassword);
   }
+  if (updates.smtpPass) {
+    updates.smtpPass = encrypt(updates.smtpPass);
+  }
 
   const settings = await ColdEmailSettingsModel.findOneAndUpdate(
     { userId },
@@ -88,6 +95,9 @@ export async function updateColdEmailSettings(req: Request, res: Response): Prom
   }
   if (settings?.imapPassword) {
     (settings as any).imapPassword = "••••••••";
+  }
+  if (settings?.smtpPass) {
+    (settings as any).smtpPass = "••••••••";
   }
 
   res.json(ok("Settings updated successfully", settings));

@@ -141,7 +141,7 @@ export default function ColdEmailSettingsPage() {
               </p>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="imap-password">Gmail App Password (Required for Sending & Replies)</Label>
+              <Label htmlFor="imap-password">Gmail App Password (for Reply Detection Only)</Label>
               <Input
                 id="imap-password"
                 type="password"
@@ -150,7 +150,7 @@ export default function ColdEmailSettingsPage() {
                 placeholder="Gmail App Password for reply tracking"
               />
               <p className="text-xs text-slate-500 mt-1">
-                Required. The system uses this to send your emails and automatically detect replies.
+                Used only for detecting replies. For sending, use the Custom SMTP Provider below.
               </p>
               <div className="rounded-md bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 p-3 text-xs space-y-1">
                 <p className="font-semibold text-amber-800 dark:text-amber-300">How to get Gmail App Password:</p>
@@ -168,6 +168,75 @@ export default function ColdEmailSettingsPage() {
                   Open Google App Passwords <ExternalLink className="h-3 w-3" />
                 </a>
               </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* --- CUSTOM SMTP PROVIDER (Brevo etc.) --- */}
+        <Card className="border-green-100 dark:border-green-900">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Mail className="h-5 w-5 text-green-600" /> Custom SMTP Provider (Recommended for Inbox Delivery)
+            </CardTitle>
+            <CardDescription>
+              Use a free SMTP provider like <strong>Brevo</strong> to send emails that land in Inbox, not Spam. 300 emails/day free — no credit card needed.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="rounded-md bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 p-3 text-xs space-y-2">
+              <p className="font-semibold text-green-800 dark:text-green-300">🚀 How to set up Brevo (Free):</p>
+              <ol className="list-decimal list-inside space-y-1 text-green-700 dark:text-green-400">
+                <li>Go to <a href="https://app.brevo.com/account/register" target="_blank" rel="noopener noreferrer" className="underline font-semibold">brevo.com</a> and create a free account.</li>
+                <li>Verify your sender email address in Brevo dashboard.</li>
+                <li>Go to <strong>SMTP &amp; API &rarr; SMTP</strong> and copy your SMTP credentials.</li>
+                <li>Paste them below and save. Your emails will now land in Inbox!</li>
+              </ol>
+              <p className="text-green-700 dark:text-green-400 mt-1"><strong>Brevo SMTP settings:</strong> Host: smtp-relay.brevo.com | Port: 587</p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="smtp-host">SMTP Host</Label>
+                <Input
+                  id="smtp-host"
+                  type="text"
+                  value={formData.smtpHost || ""}
+                  onChange={(e) => handleChange("smtpHost", e.target.value)}
+                  placeholder="smtp-relay.brevo.com"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="smtp-port">SMTP Port</Label>
+                <Input
+                  id="smtp-port"
+                  type="number"
+                  value={formData.smtpPort || ""}
+                  onChange={(e) => handleChange("smtpPort", parseInt(e.target.value))}
+                  placeholder="587"
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="smtp-user">SMTP Username (Login)</Label>
+              <Input
+                id="smtp-user"
+                type="email"
+                value={formData.smtpUser || ""}
+                onChange={(e) => handleChange("smtpUser", e.target.value)}
+                placeholder="your-brevo-login@example.com"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="smtp-pass">SMTP Password / Master Key</Label>
+              <Input
+                id="smtp-pass"
+                type="password"
+                value={formData.smtpPass || ""}
+                onChange={(e) => handleChange("smtpPass", e.target.value)}
+                placeholder="Your Brevo SMTP password"
+              />
+              <p className="text-xs text-slate-500">
+                If filled, this custom SMTP will be used for sending — overriding Gmail. Leave blank to use Gmail App Password.
+              </p>
             </div>
           </CardContent>
         </Card>

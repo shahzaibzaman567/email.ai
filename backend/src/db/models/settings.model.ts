@@ -23,8 +23,15 @@ export interface IColdEmailSettings {
   
   // Per-user From Email
   smtpFrom?: string;
-  
-  // IMAP App Password (for reply detection)
+
+  // Custom SMTP Provider (e.g. Brevo, SendGrid, etc.) — optional override
+  // If smtpHost is set, it takes priority over the global EMAIL_* env vars
+  smtpHost?: string;
+  smtpUser?: string;
+  smtpPass?: string;  // stored encrypted
+  smtpPort?: number;
+
+  // Gmail App Password for IMAP reply detection only
   imapPassword?: string;
   
   // Daily Schedule
@@ -59,10 +66,16 @@ const coldEmailSettingsSchema = new Schema<IColdEmailSettings>(
     customSubjectInstruction: { type: String, trim: true },
     groqApiKey: { type: String, trim: true },
 
-    // From Email only
+    // From Email
     smtpFrom: { type: String, trim: true },
 
-    // IMAP App Password (for reply detection)
+    // Custom SMTP override fields (stored encrypted)
+    smtpHost: { type: String, trim: true },
+    smtpUser: { type: String, trim: true },
+    smtpPass: { type: String },
+    smtpPort: { type: Number, default: 587 },
+
+    // Gmail App Password for IMAP reply detection
     imapPassword: { type: String },
 
     dailyLimit: { type: Number, default: 500 },

@@ -99,8 +99,14 @@ export const sendCampaignEmail = inngest.createFunction(
         campaignSettingsOverrides: campaign.settings || {},
         userSettings: settings,
         instructionsText,
-        // From email only (uses platform SMTP unless imapPassword is provided)
+        // From email address
         smtpFrom: settings.smtpFrom || undefined,
+        // Custom SMTP provider (e.g. Brevo) — decrypt if present
+        smtpHost: settings.smtpHost || undefined,
+        smtpUser: settings.smtpUser || undefined,
+        smtpPass: settings.smtpPass ? decrypt(settings.smtpPass) : undefined,
+        smtpPort: settings.smtpPort || 587,
+        // Gmail App Password for reply detection only
         imapPassword: settings.imapPassword ? decrypt(settings.imapPassword) : undefined,
         groqApiKey: settings.groqApiKey ? decrypt(settings.groqApiKey) : undefined,
       };
@@ -205,13 +211,29 @@ export const sendCampaignEmail = inngest.createFunction(
         }
 
         try {
-          const userSmtp = (context.smtpFrom && context.imapPassword) ? {
-            host: "smtp.gmail.com",
-            port: 465,
-            user: context.smtpFrom,
-            password: context.imapPassword,
-            from: context.smtpFrom,
-          } : undefined;
+          // Prefer custom SMTP provider (e.g. Brevo) for better deliverability
+          // Fall back to Gmail SMTP with App Password if no custom provider
+          let userSmtp: Parameters<typeof sendEmailThrottled>[0]["userSmtp"];
+
+          if (context.smtpHost && context.smtpUser && context.smtpPass) {
+            // Custom SMTP provider (Brevo, Mailjet, etc.)
+            userSmtp = {
+              host: context.smtpHost,
+              port: context.smtpPort ?? 587,
+              user: context.smtpUser,
+              password: context.smtpPass,
+              from: context.smtpFrom,
+            };
+          } else if (context.smtpFrom && context.imapPassword) {
+            // Gmail SMTP with App Password (fallback)
+            userSmtp = {
+              host: "smtp.gmail.com",
+              port: 465,
+              user: context.smtpFrom,
+              password: context.imapPassword,
+              from: context.smtpFrom,
+            };
+          }
 
           const result = await sendEmailThrottled({
             to: context.recipient,
