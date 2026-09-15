@@ -93,7 +93,9 @@ async function sendViaGas(input: SendEmailInput): Promise<SendEmailResult> {
     to: input.to,
     subject: input.subject,
     body: input.text ?? "",
-    htmlBody: input.html ?? "",
+    // If no HTML is provided, convert plain text to HTML with proper line breaks
+    // Otherwise it gets sent as a single unformatted block, which triggers spam filters
+    htmlBody: input.html ?? (input.text ? input.text.replace(/\n/g, "<br>") : ""),
     fromName: fromName ?? "",
   };
 
