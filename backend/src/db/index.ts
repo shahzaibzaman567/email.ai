@@ -1,5 +1,13 @@
+import dns from "node:dns";
 import mongoose from "mongoose";
 import { logger } from "../lib/logger.js";
+
+// Bypass local ISP SRV DNS query timeouts (queryTxt ETIMEOUT) by using Google DNS
+try {
+  dns.setServers(["8.8.8.8", "1.1.1.1"]);
+} catch {
+  // Ignore if custom DNS cannot be set
+}
 
 let cachedPromise: Promise<typeof mongoose> | null = null;
 
